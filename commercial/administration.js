@@ -48,8 +48,25 @@ function editClient({db,g,d,root,refresh,notify}){
  root.append(form);
 }
 function reportClient({g,d,s,notify}){
- const report=[`FITOS · REPORTE DE GESTIÓN`,`Gimnasio: ${g.name}`,`Titular: ${d.legal_contact||'No registrado'}`,`Estado: ${statusName[g.status]||g.status}`,`Usuarios totales: ${s.total||0}`,`Usuarios activos: ${s.active||0}`,`Usuarios dados de baja: ${s.disabled||0}`,`Renovaciones en 30 días: ${s.renewing_30d||0}`,`Pagos vencidos registrados: ${s.overdue||0}`,`Mensualidades sin datos: ${s.unknown_billing||0}`,`Notas: ${d.notes||'Sin notas'}`,`Generado: ${new Date().toLocaleString('es-MX')}`,`Aviso: cifras basadas en registros declarados; no representan pagos comprobados.`].join('\n');
- const blob=new Blob([report],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='fitos-reporte-'+g.slug+'.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);notify('Reporte de gestión generado.');
+ const existing=document.getElementById('fitos-management-report');
+ if(existing)existing.remove();
+ const dialog=text('dialog',undefined,'report-dialog');dialog.id='fitos-management-report';
+ const head=text('div',undefined,'report-heading');head.append(text('h2','FitOS · Informe de gestión'),text('span',new Date().toLocaleDateString('es-MX'),'small'));
+ dialog.append(head,text('h3',g.name),text('p','Titular: '+(d.legal_contact||'No registrado')+' · Licencia: '+(statusName[g.status]||g.status),'small'));
+ metrics(dialog,[['Usuarios registrados',s.total||0],['Activos',s.active||0],['Accesos desactivados',s.disabled||0],['Renovaciones en 30 días',s.renewing_30d||0],['Mensualidades vencidas',s.overdue||0],['Sin información de pago',s.unknown_billing||0]]);
+ const alerts=text('section',undefined,'report-section');alerts.append(text('h4','Puntos de atención'));
+ if(Number(s.overdue||0)>0)alerts.append(text('p','Revisar las mensualidades vencidas registradas con el gimnasio.'));
+ if(Number(s.unknown_billing||0)>0)alerts.append(text('p','Completar las fechas y estados de pago faltantes para evaluar retención.'));
+ if(Number(s.disabled||0)>0)alerts.append(text('p','Examinar los motivos de desactivación para identificar posibles oportunidades de recuperación.'));
+ if(!alerts.querySelector('p'))alerts.append(text('p','Sin alertas detectadas en los registros actuales.'));
+ dialog.append(alerts);
+ const notes=text('section',undefined,'report-section');notes.append(text('h4','Notas del cliente'),text('p',d.notes||'Sin notas registradas.'));dialog.append(notes);
+ dialog.append(text('p','Indicadores obtenidos de registros administrativos; no comprueban pagos bancarios ni permiten deducir automáticamente la tasa real de cancelación.','small'));
+ const controls=text('div',undefined,'actions report-actions');
+ controls.append(btn('Imprimir / Guardar PDF',()=>window.print(),''));
+ controls.append(btn('Cerrar',()=>dialog.close()));
+ dialog.append(controls);
+ dialog.onclose=()=>dialog.remove();document.body.append(dialog);dialog.showModal();notify('Informe de gestión preparado.');
 }
 export async function renderGymAdministration({db,g,root,notify,resetAccount}){
  root.replaceChildren();

@@ -127,3 +127,11 @@ test('Main Dashboard, tenant management and account recovery boundaries',()=>{
  const recovery=read('supabase/functions/fitos-reset-member/index.ts');
  for(const k of ['fitos_can_manage','fitos_list_gym_members','resetPasswordForEmail','verify_jwt'])assert.ok(recovery.includes(k)||k==='verify_jwt',k);
 });
+
+test('Commercial and Pages DOM contain every live dashboard element',()=>{
+ for(const file of ['commercial/index.html','app/index.html']){
+  const html=read(file);
+  for(const id of ['master','masterGyms','masterSettings','newGym','gymHome','gymAdminTab','gymAdmin','ownerManagement','athleteTabs','tabOverview','tabPlans','tabMeasurements','overview','measurements','plans','status','auth','workspace']) assert.ok(html.includes('id="'+id+'"'),file+': '+id);
+  assert.ok(html.includes('Main Dashboard'),file+' missing dashboard label');
+ }
+});

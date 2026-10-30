@@ -20,3 +20,7 @@
 #status{overflow-wrap:anywhere}.panel,.row,.heading{min-width:0}
 @media(max-width:700px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.client-grid{grid-template-columns:1fr}.top{flex-wrap:wrap}.row{align-items:stretch}.row select{max-width:100%}}
 @media(max-width:360px){.metric-grid{grid-template-columns:1fr}}
+
+.report-dialog{border:1px solid #d9e1e1;border-radius:18px;box-shadow:0 24px 70px #101b2438;padding:24px;width:min(94vw,860px);max-height:90vh;overflow:auto;color:#233037;background:#fff}
+.report-dialog::backdrop{background:#0e1a26b3}.report-dialog .metric-grid{margin:16px 0}.report-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}.report-section{border-top:1px solid #e4e9e9;padding:10px 0}.report-section p{white-space:pre-wrap;overflow-wrap:anywhere}
+@media print{body:has(#fitos-management-report[open]) > :not(#fitos-management-report){display:none!important}#fitos-management-report[open]{position:static;display:block;width:100%;max-width:none;max-height:none;overflow:visible;border:0;border-radius:0;box-shadow:none;padding:0;margin:0}.report-actions{display:none!important}.report-dialog .metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.report-dialog .metric{break-inside:avoid}}
