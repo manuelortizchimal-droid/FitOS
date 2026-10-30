@@ -95,7 +95,7 @@ function generator(){
 function routineFromCriteria(c,dayIndex=0){
  const strength=c.objective==='strength',endurance=c.objective==='endurance';
  const rest=strength?120:c.intensity==='high'?90:c.intensity==='moderate'?75:60;
- const sets=c.intensity==='high'?3:2;
+ const sets=(c.minutes<=20 && c.muscles.length>=3 && c.frequency===1)?2:c.intensity==='high'?3:2;
  const reps=strength?'6–10':endurance?'12–20':['hypertrophy','recomposition'].includes(c.objective)?'8–12':'10–15';
  const rir=c.intensity==='light'?4:c.intensity==='moderate'?3:2;
  const warmup=Math.min(7,Math.max(4,Math.round(c.minutes*.12)));let remaining=c.minutes-warmup;
