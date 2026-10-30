@@ -1,23 +1,23 @@
-# FitOS — QA pública v0.6
+# FitOS QA v0.7 — Generador de rutinas
 
-**[Abrir la prueba](https://manuelortizchimal-droid.github.io/FitOS/)**
+[**Abrir prueba en GitHub Pages**](https://manuelortizchimal-droid.github.io/FitOS/?v=0.7)
 
-## Dos recorridos de prueba
-1. Crear usuario ficticio y contraseña exclusiva como **Deportista**. Registrar perfil, rutina, series, mediciones y consultar historial.
-2. Cerrar sesión y crear otro usuario ficticio como **Dueño**. Consultar las tres sucursales, administrar membresías, cambiar tarifa, generar corte y descargar CSV.
+## Flujo deportista
+Crear una cuenta de prueba → **Generar rutina** → elegir de 1 a 3 grupos musculares, objetivo, experiencia, intensidad, minutos disponibles, frecuencia de entrenamiento y duración → previsualizar → guardar 7, 30 o 1–90 días, o utilizar solo hoy. Registrar peso, repeticiones y RIR de cada serie; consultar historial.
 
-## Auditoría v0.6
-- Contraseñas de la demo ya no se guardan directamente en texto claro (resumen SHA-256 únicamente para demostración, **no equivale a autenticación segura**).
-- Operaciones de guardado críticas con restauración de estado cuando falla el almacenamiento.
-- Corrección del cronómetro al navegar y control de intervalos duplicados.
-- Validación reforzada de peso, RIR, medidas, fechas y tarifa.
-- Protección de celdas CSV contra inyección de fórmulas.
-- Pruebas automatizadas ejecutadas en Chromium con documento local aislado y almacenamiento simulado: recorrido deportista, propietario, persistencia en estado, facturación, cronómetro y CSV. Comprobación de sintaxis JS.
+## De dónde salen las rutinas
+Catálogo **local versionado** de ejercicios por grupo muscular, con indicaciones técnicas y equipamiento. Motor **determinista** de reglas (no una consulta a IA), que distribuye ejercicios según tiempo disponible y limita intensidad/series en principiantes. Reglas basadas en principios generales de entrenamiento de fuerza e hipertrofia de ACSM; la OMS recomienda trabajar los principales grupos musculares al menos dos días por semana. Es un punto de partida general, no prescripción clínica ni sustituto de entrenador. No prescribe pesos numéricos sin conocer desempeño.
 
-## Límites y seguridad
-**Esta es una DEMO PÚBLICA**, no una aplicación comercial. Utiliza almacenamiento exclusivo del navegador, las cuentas no se sincronizan y el rol de propietario se elige libremente para las pruebas. No introducir datos reales de personas, información de membresías reales ni contraseñas personales. El sitio no está conectado a Supabase, no tiene control de acceso de servidor y **no debe usarse para facturación real**.
+- ACSM: https://pmc.ncbi.nlm.nih.gov/articles/PMC12965823/
+- OMS: https://www.ncbi.nlm.nih.gov/books/NBK566046/
 
-La v0.6 utiliza un nuevo espacio de datos locales de prueba; cuentas ficticias anteriores de v0.5 no se importan automáticamente.
+## Diseño
+Blanco perla, naranja y gris mate. Diseño responsivo.
 
-## Próximos requisitos
-Supabase Auth y PostgreSQL, permisos RLS, administrador protegido, respaldos, separación de sucursales, integración real y pruebas de carga.
+## Pruebas de desarrollo
+Se ejecutaron pruebas en Chromium sobre documento local aislado para cuenta deportista, falta de rutina, selección de dos grupos musculares, límite para principiantes, guardar plan semanal, registrar series, historial, rutina espontánea, perfil del propietario y corte. Se verificó sintaxis JavaScript con Node. La publicación CDN aún requiere verificación en navegador público.
+
+## Advertencia
+**SOLO DEMO PÚBLICA.** No utiliza Supabase; usuarios, roles, rutinas y series quedan en almacenamiento del navegador y pueden manipularse. No introducir datos personales, credenciales habituales, ni información real del gimnasio. No representa autorización ni facturación seguras. Los datos previos de la demo v0.6 se conservan en el mismo navegador, salvo que el usuario los borre.
+
+Pendiente: Supabase Auth, RLS, permisos de propietario del lado del servidor, persistencia y sincronización multi-dispositivo, auditoría de recomendaciones y pruebas de carga.
