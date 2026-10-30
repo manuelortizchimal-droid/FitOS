@@ -86,3 +86,13 @@ test('Panel Maestro includes access controls and invite activation',()=>{
  for(const x of ['fitos_list_gym_members','fitos_set_member_access','updateUser({password:','resetPasswordForEmail'])assert.ok(app.includes(x),x);
  for(const x of ['id="passwordSetup"','id="newPassword"','id="forgotPassword"'])assert.ok(html.includes(x),x);
 });
+
+test('GitHub Pages trial uses a public-only Supabase config',()=>{
+ const page=read('app/index.html'),cfg=read('commercial/config.js');
+ assert.ok(page.includes('../commercial/app.js'));
+ assert.ok(page.includes('../commercial/styles.css'));
+ assert.ok(cfg.includes('sb_publishable_'));
+ assert.ok(!cfg.includes('service_role'));
+ assert.ok(!cfg.includes('sb_secret_'));
+ assert.ok(cfg.includes('sazudzsdsluygcjivcvf.supabase.co'));
+});
