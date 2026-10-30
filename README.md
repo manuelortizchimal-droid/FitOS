@@ -1,28 +1,28 @@
-# FitOS — Prueba funcional v1.1
+# FitOS — Demo de prueba v1.3
 
-[**Abrir FitOS v1.1**](https://manuelortizchimal-droid.github.io/FitOS/?v=1.1)
+- **[Abrir FitOS](https://manuelortizchimal-droid.github.io/FitOS/?v=1.3)**
+- **[Importar rutinas](https://manuelortizchimal-droid.github.io/FitOS/import.html)**
+- **[Importar mediciones](https://manuelortizchimal-droid.github.io/FitOS/measure-import.html)**
 
-## Cambios
-- **kg/lb por deportista:** selector en Entrenar y Mi perfil. Los registros se conservan internamente en kg y se convierten a libras según la preferencia (1 kg = 2.2046226218 lb). El historial refleja esa preferencia.
-- **RIR:** explicación desplegable en cada ejercicio: repeticiones en reserva. RIR 3 significa que podrías realizar 3 repeticiones adicionales con buena técnica.
-- **Cronómetro flotante simplificado:** iniciar/pausar, reiniciar, minimizar, arrastrar y elegir 60, 90, 120 o 180 segundos. Cuenta segundos ascendentes; se pone rojo al superar la duración.
-- **Avisos opcionales:** sin aviso (por defecto), sonido de dos tonos o vibración si el teléfono/navegador es compatible. La selección se guarda por usuario en la demo. El aviso ocurre solo una vez al llegar al tiempo seleccionado.
-- **Diseño:** controles compactos y textos legibles en móvil.
+## Entrenamiento
+- Botón **FIN** únicamente cuando todas las series de la sesión estén registradas; finaliza y suma una fecha única a la racha.
+- Botón **Oops! tuve que irme :(** siempre disponible junto a FIN: guarda una salida anticipada con cuántas series se habían registrado; no cuenta como sesión completada, no incrementa la racha y permite reanudar conservando las series.
+- Modificar o eliminar planes guardados, editar ejercicios, establecer fecha de Día 1, navegar por días desde el inicio, ver resumen de semana.
+- Unidades kg/lb globales y por ejercicio; cronómetro flotante y aviso de tres tonos, sujeto al soporte del navegador.
 
-## Verificaciones ejecutadas
-- Sintaxis JavaScript: PASS.
-- 14 casos de conversión kg → lb → kg, redondeos incluidos: PASS.
-- Reloj simulado: alarma una sola vez al alcanzar 60 s, indicador rojo y reinicio a cero: PASS.
-- Lectura del código publicado y conservación de la clave anterior de la demo: PASS.
+## Importar mediciones
+- CTA en **Mediciones** para pegar texto, cargar TXT/CSV, XLS/XLSX, PDF (incluido escaneado) o imágenes, y pegar capturas.
+- Lectura local con bibliotecas Tesseract.js, PDF.js y SheetJS descargadas cuando se requieren (dependen de red y compatibilidad).
+- Extracción de fechas, peso en kg/lb, cintura, grasa, masa muscular y perímetros; revisión y corrección de cada registro previa al guardado.
+- La grasa corporal y masa muscular reportadas por una báscula de bioimpedancia se etiquetan como **estimaciones del dispositivo**. Se conservan los registros por fecha, actualizando los existentes del mismo deportista y fecha, sin eliminar el resto del historial.
 
-No se han probado los efectos físicos de sonido/vibración en dispositivos reales ni la regresión visual integral de móviles. La integración con Supabase sigue pendiente.
+## Comprobaciones realizadas
+- Sintaxis JavaScript válida en index.html, import.html y measure-import.html.
+- Generación de rutinas: 3,528 combinaciones de intensidad, objetivo, minutos, músculos y frecuencia; ninguna sesión vacía, tiempo estimado dentro del límite y cobertura de zonas.
+- Lectura de mediciones ficticias: etiquetas de báscula, CSV de dos fechas y conversión de 154 lb a kg.
+- Verificación de fechas de plan: inicio lunes 2026-11-02; tres entrenamientos distribuidos en lunes, miércoles y viernes.
 
-## Compatibilidad
-- El sonido utiliza Web Audio API y puede requerir un toque inicial; puede no reproducirse al bloquear la pantalla o cambiar de aplicación.
-- La vibración requiere la API Vibration, no disponible en Safari de iPhone y otros navegadores. La opción se deshabilita cuando no existe soporte.
-- No se garantizan alertas con pantalla bloqueada ni fuera de la aplicación.
-
-Fuentes: [Vibration API — MDN](https://developer.mozilla.org/en-US/docs/Web/API/Vibration_API) y [Web Audio — MDN](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices).
+**Pendiente:** verificación visual y táctil en teléfono, OCR real de documentos e imágenes, lectura de PDF/Excel en diversos equipos, pruebas end-to-end del flujo completo, autenticación y persistencia Supabase. La publicación final de GitHub Pages no pudo comprobarse mediante el navegador disponible.
 
 ## Seguridad
-**DEMO PÚBLICA — NO USAR DATOS REALES.** Sin Supabase, autenticación segura, autorización de servidor ni facturación verificada. Usar correos y contraseñas ficticios.
+**Esta es una DEMOSTRACIÓN PÚBLICA** con almacenamiento local y roles no protegidos. No usar información real de deportistas, mediciones médicas, credenciales habituales ni datos reales de clientes. No válida para operación comercial ni facturación. Los lectores externos solo se cargan al solicitar importación.
