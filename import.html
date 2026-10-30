@@ -1,0 +1,93 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f7f5f0"><title>FitOS · Importar rutina</title>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#343638;background:#f7f5f0}*{box-sizing:border-box}body{margin:0;padding:20px 12px 70px}main{max-width:830px;margin:auto}h1{font-size:clamp(24px,6vw,32px)}h2{font-size:19px}p{line-height:1.5;color:#606368}small,.hint{font-size:13px;color:#777}button,.link{font:inherit;display:inline-block;cursor:pointer;border:0;background:#ed7622;color:white;border-radius:12px;padding:12px 16px;font-weight:700;min-height:44px;text-decoration:none}button.secondary,.link.secondary{background:#e9e8e4;color:#343638}.card{background:#fff;border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 1px 8px #0001}label{display:block;margin:10px 0 5px;font-size:14px;font-weight:650}input,select,textarea{font:inherit;border-radius:10px;border:1px solid #d3d1ca;background:#fff;padding:10px;width:100%;min-width:0;min-height:44px;color:#343638}textarea{min-height:150px;resize:vertical}.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.actions>*{flex:1 1 160px}.row{border:1px solid #e6e4df;border-radius:12px;padding:12px;margin:8px 0}.row-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.row-fields label{font-size:12px}.info{background:#fff4e9;border-left:3px solid #ed7622;border-radius:10px;padding:10px;font-size:13px;line-height:1.5}.danger{background:#b93b29!important}.status{min-height:25px;font-size:13px;color:#b24b16}button:disabled{opacity:.5;cursor:not-allowed}.titlebar{display:flex;align-items:center;justify-content:space-between;gap:10px}.day{border-top:1px solid #eee;padding:10px 0}.preview{max-height:75vh;overflow:auto}a{color:#ba5717}.help{cursor:help;border:1px solid #c6c3bf;border-radius:50%;padding:0 5px;font-size:12px}@media(max-width:520px){.card{padding:14px}.cols{grid-template-columns:1fr}.row-fields{grid-template-columns:repeat(2,minmax(0,1fr))}button,.link{font-size:14px}}</style>
+</head><body><main>
+<div class="titlebar"><h1>Importar mi rutina</h1><a class="link secondary" href="index.html">Volver a FitOS</a></div>
+<p>¿Ya tienes una rutina? Pega el texto, una captura de pantalla o sube un archivo. <b>Revisa los datos detectados antes de guardar.</b></p>
+<div class="info">Vista de prueba pública. Usa rutinas ficticias: no subas archivos que incluyan nombres, diagnósticos ni datos personales. La extracción se realiza en este navegador, pero los lectores de PDF, Excel e imágenes requieren descargar bibliotecas externas.</div>
+<section class="card"><h2>1. Comparte tu rutina</h2>
+<label for="pasteText">Pegar texto de tu rutina</label><textarea id="pasteText" placeholder="Ejemplo:\nDía 1 - Pecho\nPress en máquina 3x12 descanso 90s\nAperturas en polea 3x15\nDía 2 - Espalda\nJalón al pecho 3x10"></textarea>
+<div class="actions"><button id="parseText">Analizar texto pegado</button><button class="secondary" id="pasteClipboard">Pegar desde portapapeles</button></div>
+<label for="fileInput">O selecciona un archivo</label><input id="fileInput" type="file" accept=".txt,.csv,.tsv,.xlsx,.xls,.pdf,image/png,image/jpeg,image/webp,image/bmp,.png,.jpg,.jpeg,.webp">
+<p class="hint">TXT, CSV, Excel, PDF o imagen. En PC puedes pegar una captura con Ctrl+V. Los archivos con tablas complejas pueden necesitar correcciones.</p>
+<p class="status" id="status" role="status"></p>
+</section>
+<section id="review" class="card" hidden><h2>2. Revisa los ejercicios detectados</h2><p class="hint">Puedes cambiar nombre, series, repeticiones, RIR, descanso y notas. El texto no reconocido no se guardará automáticamente.</p><div id="parsedRows"></div><div class="actions"><button class="secondary" id="addExercise">Agregar ejercicio</button><button id="clearReview" class="secondary">Volver a analizar</button></div>
+<div class="cols"><div><label for="duration">Guardar este plan durante</label><select id="duration"><option value="7">Una semana</option><option value="14">Dos semanas</option><option value="30">Un mes</option></select></div><div><label for="startDate">¿Cuándo quieres comenzar el Día 1?</label><input id="startDate" type="date"></div></div>
+<p class="hint">Si has importado varios días, se convertirán en entrenamientos distintos de tu plan, con un máximo de seis días por semana. Un plan nuevo reemplaza al plan activo, pero conserva los registros anteriores.</p>
+<div class="actions"><button id="savePlan">Guardar plan revisado en FitOS</button></div></section>
+<section class="card"><h2>¿Qué significan estos términos? <span class="help" title="Explicación de términos">?</span></h2>
+<details><summary>Glosario rápido de entrenamiento</summary><p><b>Drop set:</b> reducir carga y continuar la serie, una técnica avanzada. <b>RIR:</b> repeticiones que aún podrías hacer con técnica correcta. <b>Tempo:</b> segundos por fase de la repetición. <b>Excéntrica o negativa:</b> movimiento controlado mientras el músculo se alarga. <b>Concéntrica:</b> fase de levantar o empujar. <b>Isometría:</b> mantener una posición. <b>Fatiga:</b> disminución temporal del rendimiento. <b>Superserie:</b> dos ejercicios seguidos con poco descanso. <b>Fallo muscular:</b> no poder completar otra repetición sin perder técnica.</p></details>
+</section>
+</main><script>
+'use strict';
+const STORE='fitos_demo_v06_public';const $=x=>document.querySelector(x);const safe=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const now=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
+const uid=()=>crypto.randomUUID();const say=x=>{$('#status').textContent=x};
+let db;try{db=JSON.parse(localStorage.getItem(STORE))}catch{}const user=db?.users?.find(u=>u.id===db.session);
+if(!user||user.role!=='athlete'){$('#savePlan')?.setAttribute('disabled','');say('Inicia sesión como deportista en FitOS para guardar un plan. Puedes revisar la extracción sin iniciar sesión.')}
+const date=()=>{const d=new Date();d.setDate(d.getDate()+((8-d.getDay())%7||7));return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};$('#startDate').value=date();$('#startDate').min=now();
+function shiftDate(start,delta){const a=start.split('-').map(Number),d=new Date(a[0],a[1]-1,a[2],12);d.setDate(d.getDate()+delta);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
+let draft=[];
+function normalizedLine(s){return s.replace(/[\u00a0\u200b]/g,' ').trim().replace(/[ ]{2,}/g,' ')}
+function parseRoutine(text){
+ const lines=String(text||'').slice(0,60000).split(/\r?\n/).map(normalizedLine).filter(Boolean);const result=[];let day=1;
+ for(const line of lines){
+  const header=line.match(/^(?:día|dia|day|sesión|sesion|lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)\s*(\d{1,2})?\s*[:\-–. ]*(.*)$/i);
+  if(header && (header[1] || /^(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)/i.test(line))){day=header[1]?Number(header[1]):Math.min(day+1,6);continue}
+  const sep=/[\t;,|]/.test(line);const columns=sep?line.split(/[\t;,|]/).map(x=>x.trim()).filter(Boolean):[];
+  if(columns.length>=3 && /^(ejercicio|exercise|nombre|músculo|musculo)$/i.test(columns[0]))continue;
+  let name='',sets=3,reps='10–12',rir=3,rest=90,notes='';
+  if(columns.length>=3 && /^\d+$/.test(columns[1])){name=columns[0];sets=Number(columns[1]);reps=columns[2];if(columns[3]&&/^\d+$/.test(columns[3]))rest=Number(columns[3]);notes=columns.slice(4).join('; ')}
+  else {
+   let match=line.match(/^(.{3,95}?)\s+(\d{1,2})\s*[x×]\s*(\d{1,3}(?:\s*[-–]\s*\d{1,3})?)\b(.*)$/i);
+   if(!match)match=line.match(/^(.{3,95}?)\s+(\d{1,2})\s*series?\s*(?:de|x)?\s*(\d{1,3}(?:\s*[-–]\s*\d{1,3})?)\b(.*)$/i);
+   if(!match)continue;name=match[1];sets=Number(match[2]);reps=match[3];notes=match[4]||'';
+  }
+  if(!name||sets<1||sets>10||name.length>100)continue;
+  const r=notes.match(/(?:rir|reserva)\s*[:=]?\s*(\d{1,2})/i);if(r)rir=Math.max(0,Math.min(10,Number(r[1])));
+  const rests=notes.match(/(?:descanso|rest)\s*[:=]?\s*(\d{1,3})\s*(s|seg|segundos|min|m)?/i);if(rests)rest=rests[2]?.startsWith('m')?Number(rests[1])*60:Number(rests[1]);
+  const tempo=notes.match(/(?:tempo|ritmo)\s*[:=]?\s*(\d[-–]\d[-–]\d[-–]\d)/i);
+  const technique=notes.match(/drop\s*set|dropset|superserie|isom[eé]tric[ao]|fatiga|negativ[ao]/ig);
+  notes=[tempo?'Tempo '+tempo[1].replaceAll('–','-'):'',technique?technique.join(', '):'',notes.trim()].filter(Boolean).join(' · ').slice(0,300);
+  reps=String(reps).replace(/\s*[-–]\s*/g,'–').slice(0,20);
+  result.push({day:Math.min(Math.max(day,1),6),name,sets,reps,rir,rest:Math.max(30,Math.min(300,rest)),notes});
+  if(result.length>=100)break;
+ }
+ return result;
+}
+function renderDraft(){
+ $('#review').hidden=false;
+ $('#parsedRows').innerHTML=draft.map((item,i)=>`<div class="row" data-i="${i}"><div class="titlebar"><b>Ejercicio ${i+1}</b><button class="secondary" type="button" data-remove="${i}">Quitar</button></div><label>Nombre</label><input data-field="name" value="${safe(item.name)}" maxlength="100"><div class="row-fields"><div><label>Día</label><input data-field="day" type="number" min="1" max="6" value="${item.day}"></div><div><label>Series</label><input data-field="sets" type="number" min="1" max="10" value="${item.sets}"></div><div><label>Reps</label><input data-field="reps" value="${safe(item.reps)}"></div><div><label>RIR</label><input data-field="rir" type="number" min="0" max="10" value="${item.rir}"></div></div><label>Descanso (segundos)</label><input data-field="rest" type="number" min="30" max="300" value="${item.rest}"><label>Notas y técnica</label><input data-field="notes" value="${safe(item.notes)}" maxlength="300"></div>`).join('');
+ document.querySelectorAll('[data-remove]').forEach(btn=>btn.onclick=()=>{readDraft();draft.splice(Number(btn.dataset.remove),1);renderDraft()});
+ $('#review').scrollIntoView({behavior:'smooth',block:'start'});say(draft.length+' ejercicio(s) detectado(s). Revísalos antes de guardar.');
+}
+function readDraft(){draft=[...document.querySelectorAll('#parsedRows .row')].map(row=>{const get=n=>row.querySelector('[data-field="'+n+'"]')?.value||'';return {name:get('name').trim(),day:Number(get('day')),sets:Number(get('sets')),reps:get('reps'),rir:Number(get('rir')),rest:Number(get('rest')),notes:get('notes')}})}
+function parseAndReview(text){draft=parseRoutine(text);if(!draft.length){say('No pude identificar series y repeticiones. Ejemplo: Press de pecho 3x12. También puedes agregar los ejercicios manualmente.');draft=[{day:1,name:'',sets:3,reps:'10–12',rir:3,rest:90,notes:''}]}renderDraft()}
+$('#parseText').onclick=()=>parseAndReview($('#pasteText').value);
+$('#pasteClipboard').onclick=async()=>{try{const text=await navigator.clipboard.readText();$('#pasteText').value=text;parseAndReview(text)}catch{say('Pega el texto manualmente con Ctrl+V o mantener presionado → Pegar.')}};
+$('#addExercise').onclick=()=>{readDraft();draft.push({day:1,name:'',sets:3,reps:'10–12',rir:3,rest:90,notes:''});renderDraft()};
+$('#clearReview').onclick=()=>{$('#review').hidden=true;say('Puedes pegar o cargar otro archivo.')};
+function loadScript(src,check){return new Promise((resolve,reject)=>{if(check())return resolve();const script=document.createElement('script');script.src=src;script.onload=()=>resolve();script.onerror=()=>reject(Error('No se pudo cargar el lector externo; verifica tu conexión.'));document.head.appendChild(script)})}
+async function ocrImage(input){say('Reconociendo texto en la imagen... puede tardar.');await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',()=>!!window.Tesseract);const worker=await Tesseract.createWorker('spa+eng');try{const out=await worker.recognize(input);return out.data.text}finally{await worker.terminate()}}
+async function extractFile(file){
+ if(file.size>10*1024*1024)throw Error('El archivo supera 10 MB.');
+ const name=file.name.toLowerCase();
+ if(/\.(txt|csv|tsv)$/.test(name))return await file.text();
+ if(/\.(xlsx|xls)$/.test(name)){say('Leyendo Excel...');await loadScript('https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js',()=>!!window.XLSX);const book=XLSX.read(await file.arrayBuffer(),{type:'array',sheetRows:400});return book.SheetNames.slice(0,6).map(n=>XLSX.utils.sheet_to_csv(book.Sheets[n])).join('\n')}
+ if(name.endsWith('.pdf')){say('Leyendo PDF...');const version='4.10.38';const pdf=await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/'+version+'/pdf.min.mjs');pdf.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/'+version+'/pdf.worker.min.mjs';const doc=await pdf.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;let lines=[];for(let n=1;n<=Math.min(8,doc.numPages);n++){const page=await doc.getPage(n),content=await page.getTextContent();let text=content.items.map(x=>x.str).join(' ');if(text.trim().length<25){const viewport=page.getViewport({scale:1.6}),canvas=document.createElement('canvas');canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;text=await ocrImage(canvas)}lines.push(text)}return lines.join('\n')}
+ if(file.type.startsWith('image/')||/\.(png|jpg|jpeg|webp|bmp)$/.test(name))return await ocrImage(file);
+ throw Error('Formato no admitido.');
+}
+$('#fileInput').onchange=async event=>{const file=event.target.files?.[0];if(!file)return;try{const text=await extractFile(file);$('#pasteText').value=text.slice(0,60000);parseAndReview(text)}catch(err){say('No se pudo leer: '+err.message)}finally{event.target.value=''}};
+document.addEventListener('paste',async event=>{const image=[...(event.clipboardData?.items||[])].find(x=>x.type.startsWith('image/'));if(!image)return;event.preventDefault();try{const text=await ocrImage(image.getAsFile());$('#pasteText').value=text.slice(0,60000);parseAndReview(text)}catch(err){say('Error al leer la captura: '+err.message)}});
+$('#savePlan').onclick=()=>{
+ if(!user||!db)return say('Inicia sesión como deportista para guardar.');
+ readDraft();if(!draft.length||draft.some(e=>!e.name||e.name.length>100||!Number.isInteger(e.day)||e.day<1||e.day>6||!Number.isInteger(e.sets)||e.sets<1||e.sets>10||!/^\d{1,3}(?:[–-]\d{1,3})?$/.test(e.reps)||!Number.isInteger(e.rir)||e.rir<0||e.rir>10||!Number.isInteger(e.rest)||e.rest<30||e.rest>300))return say('Revisa los campos. Los ejercicios necesitan nombre, series, repeticiones, RIR y descanso válidos.');
+ const start=$('#startDate').value,duration=Number($('#duration').value);if(!/^\d{4}-\d{2}-\d{2}$/.test(start)||start<now())return say('Elige una fecha de inicio desde hoy.');
+ const count=Math.max(...draft.map(e=>e.day));const sessions=Array.from({length:count},(_,i)=>{const ex=draft.filter(x=>x.day===i+1).map((x,j)=>({id:'import-'+i+'-'+j+'-'+x.name.toLowerCase().slice(0,15),name:x.name,muscle:'Rutina importada',sets:x.sets,reps:x.reps,rir:x.rir,rest:x.rest,tech:x.notes||'Movimientos controlados y sin dolor.',equipment:'Según disponibilidad',minutes:0}));return {title:'Rutina importada · Día '+(i+1),objective:'custom',intensity:'moderate',minutes:60,estimatedMinutes:Math.min(90,5+ex.reduce((a,x)=>a+x.sets*2,0)),ex}});
+ if(sessions.some(x=>!x.ex.length))return say('Hay días sin ejercicios. Asigna días consecutivos entre 1 y '+count+'.');
+ if(!confirm('¿Guardar el plan importado como tu plan principal? La rutina anterior dejará de estar activa, pero sus registros se conservarán.'))return;
+ const old=structuredClone(db);try{const plan={id:uid(),userId:user.id,title:'Mi rutina importada',start,end:shiftDate(start,duration-1),sessions,created:now(),criteria:{duration:'imported',frequency:count,imported:true}};db.plans=db.plans||[];db.plans.push(plan);const u=db.users.find(u=>u.id===user.id);u.activePlanId=plan.id;delete db.quickWorkouts[user.id];localStorage.setItem(STORE,JSON.stringify(db));say('Plan importado y guardado. Regresa a FitOS para consultar tus sesiones.');location.assign('index.html')}catch(err){db=old;say('No se pudo guardar el plan: '+err.message)}
+};
+</script></body></html>
