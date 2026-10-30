@@ -1,0 +1,23 @@
+name: FitOS Commercial — arquitectura y compilacion
+on:
+  push:
+    paths:
+      - 'commercial/**'
+      - 'supabase/**'
+      - 'scripts/**'
+      - 'tests/commercial.test.mjs'
+      - '.github/workflows/fitos-commercial-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test arquitectura y compilacion
+        run: node --test tests/commercial.test.mjs

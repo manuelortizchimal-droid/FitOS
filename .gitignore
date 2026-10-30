@@ -1,0 +1,6 @@
+# Generated Cloudflare Pages distribution; configuration contains public Supabase key only
+/dist/
+/node_modules/
+.env
+.env.*
+!.env.example

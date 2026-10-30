@@ -1,0 +1,6 @@
+// Example only. The build generates config.js from Cloudflare Pages environment variables.
+// Never put SUPABASE_SERVICE_ROLE_KEY or database passwords in frontend code.
+export const FITOS_CONFIG = {
+ url: 'https://REPLACE.supabase.co',
+ publishableKey: 'sb_publishable_REPLACE'
+};

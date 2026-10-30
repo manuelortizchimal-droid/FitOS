@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FitOS · Plataforma</title><meta name="description" content="FitOS: entrenamiento y seguimiento para gimnasios">
+<link rel="stylesheet" href="./styles.css"></head><body>
+<header class="top"><strong>Fit<span>OS</span></strong><span id="environment">Plataforma para gimnasios</span><button id="logout" class="outline" hidden>Cerrar sesión</button></header>
+<main class="shell">
+<section id="configError" class="panel" hidden><h1>Configuración pendiente</h1><p>Configura Supabase antes de utilizar esta aplicación.</p></section>
+<section id="auth" class="panel" hidden><h1>Acceder a FitOS</h1><p>Inicia sesión con la cuenta autorizada de tu gimnasio.</p>
+<form id="login"><label for="email">Correo electrónico</label><input id="email" type="email" autocomplete="username" required maxlength="254">
+<label for="password">Contraseña</label><input id="password" type="password" autocomplete="current-password" required minlength="8">
+<button type="submit" id="submitLogin">Entrar</button></form>
+<p class="small">El administrador crea e invita a los usuarios. No existe registro público de gimnasios.</p></section>
+<section id="workspace" hidden><div class="heading"><h1 id="greeting">Mi gimnasio</h1><p id="identity"></p></div>
+<nav id="gymPicker" aria-label="Mis gimnasios"></nav><p id="licenseNotice" class="warn" hidden></p>
+<div id="mainArea">
+<div id="master" class="panel" hidden><h2>Panel Maestro FitOS</h2><form id="newGym">
+<label for="gymName">Nuevo gimnasio</label><input id="gymName" required maxlength="140" placeholder="Nombre comercial">
+<label for="gymSlug">Identificador del gimnasio</label><input id="gymSlug" required maxlength="63" pattern="[a-z0-9][a-z0-9-]{1,62}" placeholder="gimnasio-demo">
+<button>Crear gimnasio</button></form><div id="masterGyms"></div></div>
+<section class="panel" id="gymHome"><div class="heading"><h2 id="gymTitle">Gimnasio</h2><span id="gymRole"></span></div>
+<div class="actions"><button id="tabOverview" class="outline" type="button">General</button><button id="tabMeasurements" class="outline" type="button">Medidas</button><button id="tabPlans" class="outline" type="button">Rutinas</button></div>
+<div id="overview"></div><div id="measurements" hidden><h3>Historial corporal</h3><form id="addMeasure" class="inline-form"><label>Fecha <input id="measureDate" type="date" required></label><label>Peso (kg) <input id="measureWeight" type="number" min="20" max="400" step=".01" required></label><button>Guardar medición</button></form><div id="measurementRows"></div></div>
+<div id="plans" hidden><h3>Rutinas del gimnasio</h3><div id="planRows"></div></div>
+</section></div></section>
+<p id="status" role="status" aria-live="polite"></p>
+</main><script type="module" src="./app.js"></script></body></html>
