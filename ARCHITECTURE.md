@@ -28,3 +28,10 @@ No se han conectado cuentas reales. No se aplicaron migraciones en Supabase ni s
 El portal comercial contiene acceso, vista de gimnasios/sucursales, panel maestro de licencias, lectura de rutinas e historial y registro de mediciones. La migración del generador completo de rutinas/ejercicios, cronómetro, cargas, fotos, importación de PDF/OCR, invitaciones y administración completa de usuarios al nuevo cliente requiere integración posterior; la demo antigua conserva esas funciones.
 
 Los backups y la retención de datos deben ser explícitos y acordes a los contratos. No hay compromiso de SLA, seguridad certificada o lanzamiento comercial hasta probar esos requisitos.
+
+## Invitaciones y registro de entrenamiento
+
+- Endpoint previsto: `supabase/functions/fitos-invite/index.ts`, que recibe correo, gimnasio, rol y sucursal desde un administrador autenticado. En Supabase se despliega con JWT verificado y secrets exclusivos del servidor. Variables: `FITOS_ALLOWED_ORIGINS` (lista exacta), `FITOS_INVITE_REDIRECT_URL` (URL permitida), `SUPABASE_SERVICE_ROLE_KEY` (solo servidor).
+- Aplicar también la migración `0003_license_visibility.sql` tras 0001 y 0002.
+- El frontend comercial incluye registro de series, rutinas básicas de 1 a 7 días y finalización de sesión. Está pendiente trasladar todos los métodos avanzados del motor de la demo y probar integración real.
+- El alta de usuario actual envía invitación antes de adjuntar membresía; si falla el segundo paso, requiere revisión administrativa. No enviar invitaciones reales sin ensayo de esta recuperación.

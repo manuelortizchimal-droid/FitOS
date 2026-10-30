@@ -7,7 +7,7 @@ const key=process.env.SUPABASE_PUBLISHABLE_KEY||'';
 if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url))throw Error('SUPABASE_URL debe ser una URL HTTPS de Supabase');
 if(!/^(sb_publishable_[A-Za-z0-9_-]+|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/.test(key))throw Error('SUPABASE_PUBLISHABLE_KEY inválida');
 const out=path.join(root,'dist');await mkdir(out,{recursive:true});
-for(const name of ['index.html','app.js','styles.css'])await copyFile(path.join(root,'commercial',name),path.join(out,name));
+for(const name of ['index.html','app.js','styles.css','training.js'])await copyFile(path.join(root,'commercial',name),path.join(out,name));
 await writeFile(path.join(out,'config.js'),'export const FITOS_CONFIG = '+JSON.stringify({url,publishableKey:key})+';\n');
 await writeFile(path.join(out,'_headers'),`/*
   X-Content-Type-Options: nosniff

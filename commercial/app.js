@@ -1,5 +1,6 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.10/+esm';
 import { FITOS_CONFIG } from './config.js';
+import { renderTraining } from './training.js';
 
 const $=id=>document.getElementById(id), show=(id,on)=>$(id).hidden=!on;
 const safeText=(node,value)=>{node.textContent=String(value??'')};
@@ -71,7 +72,23 @@ async function loadOverview(){
  for(const branch of list){const row=node('div','','row');row.append(node('strong',branch.name));root.append(row)}
  if(!list.length)root.append(node('p','No hay sucursales registradas.'));
  if(isMaster||['owner','admin'].includes(memberships.find(m=>m.gym_id===activeGym.id)?.role)){
- const form=node('form');const input=node('input');input.required=true;input.maxLength=120;input.placeholder='Nombre de nueva sucursal';input.setAttribute('aria-label','Nombre de nueva sucursal');const add=node('button','Agregar sucursal');form.append(input,add);form.onsubmit=async e=>{e.preventDefault();try{const {error}=await db.from('fitos_branches').insert({gym_id:activeGym.id,name:input.value.trim()});if(error)throw error;input.value='';await loadOverview()}catch(err){notice(errorMessage(err))}};root.append(form)}
+ const form=node('form');const input=node('input');input.required=true;input.maxLength=120;input.placeholder='Nombre de nueva sucursal';input.setAttribute('aria-label','Nombre de nueva sucursal');const add=node('button','Agregar sucursal');form.append(input,add);form.onsubmit=async e=>{e.preventDefault();try{const {error}=await db.from('fitos_branches').insert({gym_id:activeGym.id,name:input.value.trim()});if(error)throw error;input.value='';await loadOverview()}catch(err){notice(errorMessage(err))}};root.append(form);
+ const invitation=node('form');invitation.append(node('h3','Invitar usuario'));
+ const email=node('input');email.type='email';email.required=true;email.maxLength=254;email.placeholder='correo@ejemplo.com';email.setAttribute('aria-label','Correo a invitar');
+ const role=node('select');role.setAttribute('aria-label','Rol del invitado');
+ for(const option of ['athlete','trainer','admin',...(isMaster?['owner']:[])]){const item=node('option',option);item.value=option;role.append(item)}
+ const branch=node('select');branch.setAttribute('aria-label','Sucursal del invitado');const empty=node('option','Sin sucursal');empty.value='';branch.append(empty);
+ for(const item of list){const option=node('option',item.name);option.value=item.id;branch.append(option)}
+ const send=node('button','Enviar invitación');send.type='submit';
+ invitation.append(email,role,branch,send);
+ invitation.onsubmit=async e=>{e.preventDefault();send.disabled=true;
+ try{if(role.value==='trainer'&&!branch.value)throw Error('El entrenador debe tener sucursal asignada.');
+ const {data,error}=await db.functions.invoke('fitos-invite',{body:{gym_id:activeGym.id,email:email.value.trim(),role:role.value,branch_id:branch.value||null}});
+ if(error)throw error;
+ if(!data?.ok)throw Error(data?.error||'No se pudo enviar la invitación.');
+ email.value='';notice('Invitación enviada.');await refresh();
+ }catch(err){notice(errorMessage(err))}finally{send.disabled=false}};
+ root.append(invitation)}
 }
 async function loadMeasurements(){
  const root=$('measurementRows');root.replaceChildren();
@@ -88,10 +105,7 @@ async function addMeasurement(e){
  try{const {error}=await db.from('fitos_measurements').upsert({gym_id:activeGym.id,athlete_id:auth.id,measured_on:date,weight_kg:weight,origin:'manual'},{onConflict:'gym_id,athlete_id,measured_on'});if(error)throw error;$('measureWeight').value='';notice('Medición guardada.');await loadMeasurements()}catch(err){notice(errorMessage(err))}
 }
 async function loadPlans(){
- const root=$('planRows');root.replaceChildren();
- const rows=await request('fitos_plans','id,title,starts_on,ends_on,athlete_id,active',[['gym_id',activeGym.id]]);
- if(!rows.length)root.append(node('p','Sin rutinas asignadas.'));
- for(const r of rows){const row=node('div','','row');row.append(node('strong',r.title));row.append(node('span',r.starts_on+' a '+r.ends_on));root.append(row)}
+ await renderTraining({db,gym:activeGym,auth,role:isMaster?'superadmin':memberships.find(m=>m.gym_id===activeGym.id)?.role||'athlete',root:$('planRows'),notify:notice});
 }
 function paintMaster(){
  const root=$('masterGyms');root.replaceChildren();if(!isMaster)return;

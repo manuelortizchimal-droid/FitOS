@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 const read=f=>readFileSync(new URL('../'+f,import.meta.url),'utf8');
 test('Commercial client and build scripts parse',()=>{
- for(const f of ['commercial/app.js','scripts/build.mjs']){
+ for(const f of ['commercial/app.js','commercial/training.js','scripts/build.mjs']){
   const code=spawnSync(process.execPath,['--check',new URL('../'+f,import.meta.url).pathname],{encoding:'utf8'});
   assert.equal(code.status,0,code.stderr);
  }
@@ -21,6 +21,19 @@ test('Branch and owner protection declarations are present',()=>{
  const sql=read('supabase/migrations/0002_branch_security.sql');
  for(const key of ['fitos_can_train_athlete','student.branch_id=m.branch_id','Only platform admins can modify owners','Trainer requires branch'])
   assert.ok(sql.includes(key),key);
+});
+test('Invitations are server-side and require manager authorization',()=>{
+ const src=read('supabase/functions/fitos-invite/index.ts');
+ assert.ok(src.includes('fitos_can_manage'));
+ assert.ok(src.includes('SUPABASE_SERVICE_ROLE_KEY'));
+ assert.ok(src.includes('FITOS_ALLOWED_ORIGINS'));
+ assert.ok(!read('commercial/app.js').includes('SUPABASE_SERVICE_ROLE_KEY'));
+ const sql=read('supabase/migrations/0003_license_visibility.sql');
+ assert.ok(sql.includes('license_status'));
+});
+test('Workout interface persists individual sets and completion',()=>{
+ const src=read('commercial/training.js');
+ for(const item of ['fitos_sets','fitos_workouts','onConflict:','FIN · Finalizar sesión'])assert.ok(src.includes(item));
 });
 test('Cloudflare build fails closed without public config',()=>{
  const command=spawnSync(process.execPath,['scripts/build.mjs'],{cwd:new URL('..',import.meta.url),env:{...process.env,SUPABASE_URL:'',SUPABASE_PUBLISHABLE_KEY:''},encoding:'utf8'});
