@@ -135,3 +135,11 @@ test('Commercial and Pages DOM contain every live dashboard element',()=>{
   assert.ok(html.includes('Main Dashboard'),file+' missing dashboard label');
  }
 });
+
+test('Athlete entry, invitation callback and profile onboarding',()=>{
+ const app=read('commercial/app.js'),athlete=read('athlete/index.html'),sql=read('supabase/migrations/0013_athlete_onboarding_profile.sql');
+ for(const x of ['saveAthleteProfile','loadAthleteProfile','fitos_save_my_athlete_profile','activationCallback'])assert.ok(app.includes(x),x);
+ for(const x of ['id="profileName"','id="profileBirth"','id="profileHeight"','id="saveAthleteProfile"'])assert.ok(athlete.includes(x),x);
+ assert.ok(athlete.includes('../commercial/app.js'));
+ for(const x of ['No active athlete membership','auth.uid()','fitos_profiles'])assert.ok(sql.includes(x),x);
+});

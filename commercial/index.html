@@ -29,7 +29,7 @@
 <section id="gymHome" class="panel" hidden>
 <div class="heading"><h2 id="gymTitle">Gimnasio</h2><span id="gymRole" class="tag"></span></div>
 <div id="gymAdminTab" hidden><div id="gymAdmin"></div><div id="ownerManagement"></div></div>
-<div id="athleteTabs">
+<div id="athleteTabs"><section id="athleteProfile" class="athlete-profile"><h3>Mi perfil</h3><p class="small">Completa tus datos para comenzar. Puedes editarlos cuando lo necesites.</p><form id="saveAthleteProfile" class="profile-form"><label for="profileName">Nombre completo<input id="profileName" type="text" required maxlength="120" autocomplete="name" placeholder="Nombre y apellidos"></label><label for="profileBirth">Fecha de nacimiento (opcional)<input id="profileBirth" type="date"></label><label for="profileHeight">Estatura en centímetros (opcional)<input id="profileHeight" type="number" min="80" max="250" step="0.1" inputmode="decimal"></label><button type="submit">Guardar mi perfil</button></form><p id="profileSaveStatus" role="status" aria-live="polite"></p></section>
  <div class="actions"><button id="tabOverview" class="outline" type="button">General</button><button id="tabMeasurements" class="outline" type="button">Medidas</button><button id="tabPlans" class="outline" type="button">Rutinas</button></div>
  <div id="overview"></div>
  <div id="measurements" hidden><h3>Historial corporal</h3><form id="addMeasure" class="inline-form"><label>Fecha <input id="measureDate" type="date" required></label><label>Peso (kg) <input id="measureWeight" type="number" min="20" max="400" step=".01" required></label><button type="submit">Guardar medición</button></form><div id="measurementRows"></div></div>
