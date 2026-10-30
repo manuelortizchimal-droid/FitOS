@@ -8,6 +8,8 @@ let db=null,auth=null,gyms=[],activeGym=null,memberships=[],isMaster=false,view=
 function notice(message){safeText($('status'),message)}
 function errorMessage(err){return err?.message?.slice(0,240)||'Error de conexión. Intenta de nuevo.'}
 const configured=()=>FITOS_CONFIG?.url?.startsWith('https://') && /^sb_publishable_|^eyJ/.test(FITOS_CONFIG.publishableKey||'');
+// Keep recovery and invitation callbacks on the published test application, never localhost.
+const authCallbackURL='https://manuelortizchimal-droid.github.io/FitOS/app/';
 function node(tag,text,cls){const el=document.createElement(tag);if(text!==undefined)el.textContent=String(text);if(cls)el.className=cls;return el}
 function button(text,handler,cls='outline'){const b=node('button',text,cls);b.type='button';b.onclick=handler;return b}
 function clear(id){$(id).replaceChildren()}
@@ -20,7 +22,7 @@ async function start(){
  if(recoveryMode&&auth){show('passwordSetup',true);show('auth',false);show('workspace',false)}
  db.auth.onAuthStateChange((event,session)=>{const next=session?.user||null;const changed=next?.id!==auth?.id;auth=next;if(event==='PASSWORD_RECOVERY'||(event==='SIGNED_IN'&&location.hash.includes('type=invite'))){recoveryMode=true;show('passwordSetup',true);show('auth',false);show('workspace',false)}else if(changed&&!recoveryMode){queueMicrotask(()=>refresh().catch(e=>notice(errorMessage(e))))}});
  $('setPassword').onsubmit=async ev=>{ev.preventDefault();const input=$('newPassword');if(input.value.length<12)return notice('La contraseña debe tener al menos 12 caracteres.');const {error}=await db.auth.updateUser({password:input.value});if(error)return notice(errorMessage(error));input.value='';recoveryMode=false;show('passwordSetup',false);history.replaceState(null,'',location.pathname);notice('Contraseña establecida.');await refresh()};
- $('forgotPassword').onclick=async()=>{const email=$('email').value.trim();if(!email)return notice('Escribe primero tu correo electrónico.');const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});notice(error?'No se pudo solicitar recuperación.':'Si la cuenta existe, recibirás instrucciones por correo.')};
+ $('forgotPassword').onclick=async()=>{const email=$('email').value.trim();if(!email)return notice('Escribe primero tu correo electrónico.');const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:authCallbackURL});notice(error?'No se pudo solicitar recuperación.':'Si la cuenta existe, recibirás instrucciones por correo.')};
  $('login').onsubmit=async ev=>{ev.preventDefault();$('submitLogin').disabled=true;try{const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;auth=(await db.auth.getUser()).data.user;await refresh()}catch(e){notice(errorMessage(e))}finally{$('submitLogin').disabled=false}};
  $('logout').onclick=async()=>{const {error}=await db.auth.signOut();if(error)return notice(errorMessage(error));auth=null;activeGym=null;await refresh()};
  $('newGym').onsubmit=createGym;
