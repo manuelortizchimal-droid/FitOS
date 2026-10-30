@@ -6,6 +6,7 @@ on:
       - 'supabase/**'
       - 'scripts/**'
       - 'tests/commercial.test.mjs'
+      - 'tests/sql/**'
       - '.github/workflows/fitos-commercial-ci.yml'
   workflow_dispatch:
 permissions:
@@ -13,11 +14,45 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Test arquitectura y compilacion
+      - name: Validar frontend, aislamiento estructural y compilacion
         run: node --test tests/commercial.test.mjs
+  postgres-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fitos_test
+        options: >-
+          --health-cmd "pg_isready -U postgres -d fitos_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Crear esquema de Supabase simulado
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: docker exec -i "$POSTGRES_CONTAINER" psql -U postgres -d fitos_test -v ON_ERROR_STOP=1 < tests/sql/setup.sql
+      - name: Aplicar todas las migraciones PostgreSQL
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          for file in supabase/migrations/*.sql; do
+            echo "Validando $file"
+            docker exec -i "$POSTGRES_CONTAINER" psql -U postgres -d fitos_test -v ON_ERROR_STOP=1 < "$file"
+          done
+      - name: Preparar tenants y verificar aislamiento de datos por rol
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec -i "$POSTGRES_CONTAINER" psql -U postgres -d fitos_test -v ON_ERROR_STOP=1 < tests/sql/fixtures.sql
+          docker exec -i "$POSTGRES_CONTAINER" psql -U postgres -d fitos_test -v ON_ERROR_STOP=1 < tests/sql/isolation.sql
