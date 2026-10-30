@@ -72,10 +72,10 @@ select set_config('request.jwt.claim.sub','99999999-9999-4999-8999-999999999999'
 select public.fitos_set_gym_module('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','measurements',false);
 select public.fitos_set_gym_module('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','training',false);
 select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);
-do $ begin
+do $$ begin
  if (select count(*) from public.fitos_measurements)<>0 then raise exception 'Disabled measurements module leaked data'; end if;
  if (select count(*) from public.fitos_workouts)<>0 then raise exception 'Disabled training module leaked data'; end if;
-end $;
+end $$;
 select set_config('request.jwt.claim.sub','99999999-9999-4999-8999-999999999999',false);
 select public.fitos_set_gym_module('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','measurements',true);
 select public.fitos_set_gym_module('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','training',true);
