@@ -30,6 +30,25 @@ update public.fitos_workouts set status='completed' where id='11111000-0000-4000
 do $$ begin
  if (select status from public.fitos_workouts where id='11111000-0000-4000-8000-000000000000')<>'completed' then raise exception 'Workout not completed'; end if;
 end $$;
+do $
+declare blocked boolean:=false;
+begin
+ begin
+  insert into public.fitos_workouts(gym_id,athlete_id,plan_day_id,workout_date)
+  values('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','11111111-1111-4111-8111-111111111111',
+    '11110000-0000-4000-8000-000000000000','2026-10-30');
+ exception when unique_violation then blocked:=true; end;
+ if not blocked then raise exception 'Duplicate workout was accepted'; end if;
+end $;
+do $
+declare blocked boolean:=false;
+begin
+ begin
+  update public.fitos_plans set athlete_id='44444444-4444-4444-8444-444444444444'
+  where id='11100000-0000-4000-8000-000000000000';
+ exception when others then blocked:=true; end;
+ if not blocked then raise exception 'Plan athlete transfer was accepted'; end if;
+end $;
 select set_config('request.jwt.claim.sub','99999999-9999-4999-8999-999999999999',false);
 select public.fitos_set_gym_status('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','suspended');
 select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);

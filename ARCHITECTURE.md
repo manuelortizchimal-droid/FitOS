@@ -43,3 +43,6 @@ Los backups y la retención de datos deben ser explícitos y acordes a los contr
 - `fitos_domains` asocia hostname con gimnasio. FitOS Admin puede registrar dominios; la verificación DNS/HTTPS en Cloudflare sigue siendo una tarea externa. El dominio nunca reemplaza la sesión ni los permisos RLS.
 - `fitos_photo_consents` controla acceso y subida a bucket privado `fitos-photos`, con límite de 5 MiB y tipos JPEG, PNG y WebP. Pendiente implementar UX de consentimiento y fotografías en el cliente comercial.
 - `FITOS_ALLOWED_ORIGINS` y `FITOS_INVITE_REDIRECT_URL` se deben configurar antes de activar invitaciones.
+
+- Aplicar también la migración `0007_history_integrity.sql` para impedir entrenamientos duplicados por día y conservar la titularidad/historia de planes, sesiones y mediciones.
+- GitHub Actions incluye ahora PostgreSQL 16 temporal con pruebas de aislamiento de gimnasios/sucursales, suspensión, control de finalización y bloqueo de duplicados. Estas pruebas no sustituyen el ensayo en un Supabase auténtico ni en Cloudflare.

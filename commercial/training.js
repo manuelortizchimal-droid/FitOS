@@ -68,9 +68,14 @@ export async function renderTraining({db,gym,auth,role,root,notify}){
 async function openWorkout({db,gym,auth,plan,day,root,role,notify}){
  try{
   const now=new Date().toLocaleDateString('en-CA');
-  const result=await db.from('fitos_workouts').select('id,status').eq('gym_id',gym.id).eq('athlete_id',plan.athlete_id).eq('plan_day_id',day.id).eq('workout_date',now).eq('status','in_progress').limit(1);
+  const result=await db.from('fitos_workouts').select('id,status').eq('gym_id',gym.id).eq('athlete_id',plan.athlete_id).eq('plan_day_id',day.id).eq('workout_date',now).limit(1);
   if(result.error)throw result.error;
   let workout=result.data?.[0];
+  if(workout?.status==='completed'){notify('Esta sesión ya fue finalizada hoy. Su historial permanece guardado.');return}
+  if(workout?.status==='interrupted'){
+   const reopened=await db.from('fitos_workouts').update({status:'in_progress'}).eq('id',workout.id).eq('gym_id',gym.id).select('id,status').single();
+   if(reopened.error)throw reopened.error;workout=reopened.data;
+  }
   if(!workout){
    const created=await db.from('fitos_workouts').insert({gym_id:gym.id,athlete_id:plan.athlete_id,plan_day_id:day.id,workout_date:now,status:'in_progress'}).select('id,status').single();
    if(created.error)throw created.error;workout=created.data;

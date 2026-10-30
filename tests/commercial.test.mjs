@@ -64,6 +64,12 @@ test('Database verifies workout completion and immutable ownership',()=>{
  assert.ok(schema.includes('Save all required sets before finishing'));
  assert.ok(schema.includes('Workout ownership cannot change'));
 });
+test('Workout history uniqueness and plan ownership are server-controlled',()=>{
+ const schema=read('supabase/migrations/0007_history_integrity.sql');
+ assert.ok(schema.includes('fitos_single_plan_session_per_day'));
+ assert.ok(schema.includes('Plan ownership cannot change'));
+ assert.ok(schema.includes('Cannot modify a day with completed workout history'));
+});
 test('Commercial HTML avoids inline event handlers',()=>{
  const html=read('commercial/index.html');
  assert.ok(html.includes('type="module"'));
