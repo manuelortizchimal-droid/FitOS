@@ -46,3 +46,9 @@ Los backups y la retención de datos deben ser explícitos y acordes a los contr
 
 - Aplicar también la migración `0007_history_integrity.sql` para impedir entrenamientos duplicados por día y conservar la titularidad/historia de planes, sesiones y mediciones.
 - GitHub Actions incluye ahora PostgreSQL 16 temporal con pruebas de aislamiento de gimnasios/sucursales, suspensión, control de finalización y bloqueo de duplicados. Estas pruebas no sustituyen el ensayo en un Supabase auténtico ni en Cloudflare.
+
+## Cambio 0008 (obligatorio)
+
+- Ejecutar `0008_api_privileges.sql` tras 0007 para configurar explícitamente los permisos REST en proyectos con exposición automática deshabilitada.
+- Retira la capacidad de invocar la función auxiliar `public.rls_auto_enable()` por los roles web, mitigando la advertencia del asesor de seguridad.
+- La integración Supabase fue capaz de leer FitOS-Core, pero la primera escritura de migración fue bloqueada por controles de seguridad; no afirmar instalación real hasta verificar `list_migrations` y las tablas con RLS activo.

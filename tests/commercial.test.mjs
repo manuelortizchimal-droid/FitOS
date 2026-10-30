@@ -70,6 +70,10 @@ test('Workout history uniqueness and plan ownership are server-controlled',()=>{
  assert.ok(schema.includes('Plan ownership cannot change'));
  assert.ok(schema.includes('Cannot modify a day with completed workout history'));
 });
+test('Data API grants are explicit and anonymous access revoked',()=>{
+ const sql=read('supabase/migrations/0008_api_privileges.sql');
+ for(const marker of ['revoke all on public.fitos_gyms','grant select on public.fitos_gyms','revoke insert, update, delete on public.fitos_platform_admins','rls_auto_enable()'])assert.ok(sql.includes(marker));
+});
 test('Commercial HTML avoids inline event handlers',()=>{
  const html=read('commercial/index.html');
  assert.ok(html.includes('type="module"'));

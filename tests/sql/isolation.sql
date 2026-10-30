@@ -1,3 +1,19 @@
+-- Ensure Data API uses explicit grants, but anonymous SQL access stays denied.
+do $$
+begin
+ if has_table_privilege('anon','public.fitos_gyms','SELECT') then
+   raise exception 'Anonymous access was granted to gyms';
+ end if;
+ if has_table_privilege('anon','public.fitos_measurements','SELECT') then
+   raise exception 'Anonymous access was granted to measurements';
+ end if;
+ if not has_table_privilege('authenticated','public.fitos_measurements','SELECT') then
+   raise exception 'Authenticated data API has no measurement read grant';
+ end if;
+ if has_table_privilege('authenticated','public.fitos_memberships','UPDATE') then
+   raise exception 'Membership direct write privilege must stay revoked';
+ end if;
+end $$;
 -- Actual RLS acceptance checks on PostgreSQL roles (simulated authenticated JWT subjects).
 set role authenticated;
 select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111',false);
