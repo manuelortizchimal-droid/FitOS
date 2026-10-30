@@ -102,3 +102,10 @@ test('Gym modules are controlled by RLS and superadmin RPC',()=>{
  for(const x of ['fitos_set_gym_module','fitos_module_enabled','as restrictive','fitos_measurements_module_guard','fitos_workouts_module_guard'])assert.ok(sql.includes(x),x);
  const client=read('commercial/app.js');for(const x of ['fitos_gym_modules','fitos_set_gym_module'])assert.ok(client.includes(x));
 });
+
+test('Password recovery callbacks never target localhost',()=>{
+ const src=read('commercial/app.js');
+ assert.ok(src.includes("const authCallbackURL='https://manuelortizchimal-droid.github.io/FitOS/app/'"));
+ assert.ok(src.includes('resetPasswordForEmail(email,{redirectTo:authCallbackURL})'));
+ assert.ok(!src.includes('redirectTo:location.origin+location.pathname'));
+});
