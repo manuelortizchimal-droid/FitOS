@@ -80,3 +80,9 @@ test('Commercial HTML avoids inline event handlers',()=>{
  assert.doesNotMatch(html,/\son(click|submit|change)=/);
  assert.ok(html.includes('id="master"'));
 });
+
+test('Panel Maestro includes access controls and invite activation',()=>{
+ const app=read('commercial/app.js');const html=read('commercial/index.html');
+ for(const x of ['fitos_list_gym_members','fitos_set_member_access','updateUser({password:','resetPasswordForEmail'])assert.ok(app.includes(x),x);
+ for(const x of ['id="passwordSetup"','id="newPassword"','id="forgotPassword"'])assert.ok(html.includes(x),x);
+});

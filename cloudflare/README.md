@@ -16,3 +16,15 @@ El plan gratis de Pages tiene límites de dominios; confirmar requisitos de subd
 ## Estado de la publicación
 
 Para publicar el Panel Maestro, ejecutar el build con las variables públicas de Supabase configuradas en el proveedor de hosting. No incluir claves secretas en el repositorio.
+
+## Panel Maestro — publicación
+
+- Proyecto: FitOS-Core. Nunca conectar Yamakis.
+- Cloudflare Pages: conectar `manuelortizchimal-droid/FitOS`, rama `main`.
+- Build command: `node scripts/build.mjs`.
+- Output directory: `dist` (directorio raíz sin subcarpeta).
+- Variable de compilación `SUPABASE_URL`: `https://sazudzsdsluygcjivcvf.supabase.co`.
+- Variable de compilación `SUPABASE_PUBLISHABLE_KEY`: usar la clave `sb_publishable_...` del panel Supabase → API Keys. **Es pública; jamás poner service_role.**
+- Tras la primera publicación, incluir el origen HTTPS de Cloudflare Pages en `FITOS_ALLOWED_ORIGINS` y el URL de activación en `FITOS_INVITE_REDIRECT_URL`; desplegar la Edge Function `fitos-invite` con JWT obligatorio.
+- En Supabase → Authentication → URL Configuration: incluir la URL base y ruta de redirección del nuevo dominio. Antes de comercializar, deshabilitar libre registro, activar protección contra abuso y revisar SMTP.
+- Estado esperado: el panel maestro puede iniciar sesión, crear gimnasios y gestionar licencias; las invitaciones no deben usarse sin el origen/redirect y la Edge Function configurados.

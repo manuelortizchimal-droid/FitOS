@@ -4,7 +4,7 @@ import { renderTraining } from './training.js';
 
 const $=id=>document.getElementById(id), show=(id,on)=>$(id).hidden=!on;
 const safeText=(node,value)=>{node.textContent=String(value??'')};
-let db=null,auth=null,gyms=[],activeGym=null,memberships=[],isMaster=false,view='overview';
+let db=null,auth=null,gyms=[],activeGym=null,memberships=[],isMaster=false,view='overview',recoveryMode=false;
 function notice(message){safeText($('status'),message)}
 function errorMessage(err){return err?.message?.slice(0,240)||'Error de conexión. Intenta de nuevo.'}
 const configured=()=>FITOS_CONFIG?.url?.startsWith('https://') && /^sb_publishable_|^eyJ/.test(FITOS_CONFIG.publishableKey||'');
@@ -16,7 +16,11 @@ async function start(){
  if(!configured()){show('configError',true);return}
  db=createClient(FITOS_CONFIG.url,FITOS_CONFIG.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
  const {data:{session}}=await db.auth.getSession();auth=session?.user||null;
- db.auth.onAuthStateChange((_event,session)=>{const next=session?.user||null;if(next?.id!==auth?.id){auth=next;queueMicrotask(()=>refresh().catch(e=>notice(errorMessage(e))))}});
+ recoveryMode=location.hash.includes('type=invite')||location.hash.includes('type=recovery');
+ if(recoveryMode&&auth){show('passwordSetup',true);show('auth',false);show('workspace',false)}
+ db.auth.onAuthStateChange((event,session)=>{const next=session?.user||null;const changed=next?.id!==auth?.id;auth=next;if(event==='PASSWORD_RECOVERY'||(event==='SIGNED_IN'&&location.hash.includes('type=invite'))){recoveryMode=true;show('passwordSetup',true);show('auth',false);show('workspace',false)}else if(changed&&!recoveryMode){queueMicrotask(()=>refresh().catch(e=>notice(errorMessage(e))))}});
+ $('setPassword').onsubmit=async ev=>{ev.preventDefault();const input=$('newPassword');if(input.value.length<12)return notice('La contraseña debe tener al menos 12 caracteres.');const {error}=await db.auth.updateUser({password:input.value});if(error)return notice(errorMessage(error));input.value='';recoveryMode=false;show('passwordSetup',false);history.replaceState(null,'',location.pathname);notice('Contraseña establecida.');await refresh()};
+ $('forgotPassword').onclick=async()=>{const email=$('email').value.trim();if(!email)return notice('Escribe primero tu correo electrónico.');const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});notice(error?'No se pudo solicitar recuperación.':'Si la cuenta existe, recibirás instrucciones por correo.')};
  $('login').onsubmit=async ev=>{ev.preventDefault();$('submitLogin').disabled=true;try{const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;auth=(await db.auth.getUser()).data.user;await refresh()}catch(e){notice(errorMessage(e))}finally{$('submitLogin').disabled=false}};
  $('logout').onclick=async()=>{const {error}=await db.auth.signOut();if(error)return notice(errorMessage(error));auth=null;activeGym=null;await refresh()};
  $('newGym').onsubmit=createGym;
@@ -25,6 +29,7 @@ async function start(){
  await refresh();
 }
 async function refresh(){
+ if(recoveryMode&&auth)return;
  show('auth',!auth);show('workspace',!!auth);show('logout',!!auth);if(!auth)return;
  try{
  const {data:admin,error:adminError}=await db.rpc('fitos_is_platform_admin');
@@ -46,6 +51,7 @@ function paint(){
  const picker=$('gymPicker');picker.replaceChildren();
  if(isMaster)picker.append(button('Panel Maestro',()=>{activeGym=null;paint()},'outline'));
  for(const g of gyms)picker.append(button(g.name,()=>{activeGym=g;paint();},activeGym?.id===g.id?'':'outline'));
+ if(isMaster&&!activeGym)picker.querySelector('button')?.setAttribute('aria-current','page');
  paintMaster();
  show('gymHome',!!activeGym);
  if(!activeGym){safeText($('greeting'),isMaster?'Administración FitOS':'Sin gimnasio asignado');return}
@@ -73,6 +79,19 @@ async function loadOverview(){
  root.append(node('h3','Sucursales ('+list.length+')'));
  for(const branch of list){const row=node('div','','row');row.append(node('strong',branch.name));root.append(row)}
  if(!list.length)root.append(node('p','No hay sucursales registradas.'));
+ if(isMaster||['owner','admin'].includes(memberships.find(m=>m.gym_id===activeGym.id)?.role)){
+  const panel=node('section','','member-section');panel.append(node('h3','Usuarios y accesos'));
+  const {data:members,error:membersError}=await db.rpc('fitos_list_gym_members',{g:activeGym.id});if(membersError)throw membersError;
+  if(!members?.length)panel.append(node('p','No hay usuarios asignados.'));
+  for(const member of members||[]){
+   const r=node('div','','row');const d=node('div');d.append(node('strong',member.user_id),node('p',member.member_role+' · '+(member.enabled?'Activo':'Desactivado'),'small'));r.append(d);
+   if(member.user_id!==auth.id){const action=button(member.enabled?'Desactivar acceso':'Reactivar acceso',async()=>{
+    if(!confirm('¿Confirmar el cambio de acceso?'))return;
+    action.disabled=true;try{const {error}=await db.rpc('fitos_set_member_access',{g:activeGym.id,member:member.user_id,allow_access:!member.enabled});if(error)throw error;notice('Acceso actualizado.');await loadOverview()}catch(err){action.disabled=false;notice(errorMessage(err))}
+   });r.append(action)}panel.append(r);
+  }root.append(panel);
+ }
+
  if(isMaster||['owner','admin'].includes(memberships.find(m=>m.gym_id===activeGym.id)?.role)){
  const form=node('form');const input=node('input');input.required=true;input.maxLength=120;input.placeholder='Nombre de nueva sucursal';input.setAttribute('aria-label','Nombre de nueva sucursal');const add=node('button','Agregar sucursal');form.append(input,add);form.onsubmit=async e=>{e.preventDefault();try{const {error}=await db.from('fitos_branches').insert({gym_id:activeGym.id,name:input.value.trim()});if(error)throw error;input.value='';await loadOverview()}catch(err){notice(errorMessage(err))}};root.append(form);
  const invitation=node('form');invitation.append(node('h3','Invitar usuario'));
