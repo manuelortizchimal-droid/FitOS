@@ -129,11 +129,12 @@ function generator(){
 function routineFromCriteria(c,dayIndex=0){
  const strength=c.objective==='strength',endurance=c.objective==='endurance';
  const rest=strength?120:c.intensity==='high'?90:c.intensity==='moderate'?75:60;
- const sets=c.wholeBody?(c.minutes<=30?1:c.intensity==='high'&&c.minutes>=75?3:2):(c.minutes<=20 && c.muscles.length>=3)?1:c.intensity==='high'?3:2;
+ let sets=c.wholeBody?(c.minutes<=30?1:c.intensity==='high'&&c.minutes>=75?3:2):(c.minutes<=20 && c.muscles.length>=3)?1:c.intensity==='high'?3:2;
  const reps=c.wholeBody&&c.minutes<=30?'8–10':strength?'6–10':endurance?'12–20':['hypertrophy','recomposition'].includes(c.objective)?'8–12':'10–15';
  const rir=c.intensity==='light'?4:c.intensity==='moderate'?3:2;
  const warmup=Math.min(7,Math.max(4,Math.round(c.minutes*.12)));let remaining=c.minutes-warmup;
  const muscles=c.wholeBody?[...c.muscles]:c.duration==='today'||c.frequency===1?[...c.muscles]:c.frequency<=c.muscles.length?c.muscles.filter((_,i)=>i%c.frequency===dayIndex):[c.muscles[dayIndex%c.muscles.length]];const available=[];
+ while(sets>1 && Math.ceil((sets*Number(reps.split('–').at(-1))*(c.intensity==='high'?6:4)+(sets-1)*rest+(c.wholeBody?25:50))/60)*muscles.length>remaining)sets--;
  for(let pass=0;pass<(c.wholeBody?1:4);pass++){let added=false;for(const m of muscles){
   const items=EXERCISE_BANK[m],ex=items[(pass+dayIndex)%items.length];
   if(available.some(x=>x.id===m+':'+ex[0]))continue;
