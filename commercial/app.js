@@ -1,6 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.10/+esm';
 import { FITOS_CONFIG } from './config.js';
 import { renderTraining } from './training.js';
+import { renderMainDashboard,renderGymAdministration } from './administration.js';
 
 const $=id=>document.getElementById(id), show=(id,on)=>$(id).hidden=!on;
 const safeText=(node,value)=>{node.textContent=String(value??'')};
@@ -39,36 +40,42 @@ async function refresh(){
  if(adminError)throw adminError;
  isMaster=admin===true;
  memberships=await request('fitos_memberships','gym_id,role,branch_id,enabled,user_id',[['user_id',auth.id]]);
- gyms=await request('fitos_gyms','id,name,slug,status,member_limit,brand_color');
+ gyms=await request('fitos_gyms','id,name,slug,status,member_limit,brand_color,created_at');
  gymModules=await request('fitos_gym_modules','gym_id,module_key,enabled');
  const host=location.hostname.toLowerCase();
  const domains=await request('fitos_domains','gym_id,hostname,verified',[['hostname',host]]);
  if(!isMaster){gyms=gyms.filter(g=>memberships.some(m=>m.gym_id===g.id&&m.enabled));if(domains.length){gyms=gyms.filter(g=>g.id===domains[0].gym_id)}}
- if(!activeGym||!gyms.some(g=>g.id===activeGym.id)){activeGym=gyms.find(g=>g.status==='active'||g.status==='trial')||gyms[0]||null}
+ if(!activeGym||!gyms.some(g=>g.id===activeGym.id)){activeGym=isMaster?null:(gyms.find(g=>g.status==='active'||g.status==='trial')||gyms[0]||null)}
  else activeGym=gyms.find(g=>g.id===activeGym.id);
  paint();
  }catch(e){notice(errorMessage(e));clear('gymPicker');clear('overview');clear('masterGyms');}
 }
 function paint(){
  safeText($('identity'),auth.email);
- show('master',isMaster);
+ show('master',isMaster&&!activeGym);
  const picker=$('gymPicker');picker.replaceChildren();
- if(isMaster)picker.append(button('Panel Maestro',()=>{activeGym=null;paint()},'outline'));
+ if(isMaster)picker.append(button('Main Dashboard',()=>{activeGym=null;paint()},'outline'));
  for(const g of gyms)picker.append(button(g.name,()=>{activeGym=g;paint();},activeGym?.id===g.id?'':'outline'));
  if(isMaster&&!activeGym)picker.querySelector('button')?.setAttribute('aria-current','page');
- paintMaster();
+ if(isMaster&&!activeGym){paintMaster().catch(e=>notice(errorMessage(e)))}
  show('gymHome',!!activeGym);
- if(!activeGym){safeText($('greeting'),isMaster?'Administración FitOS':'Sin gimnasio asignado');return}
+ if(!activeGym){safeText($('greeting'),isMaster?'Main Dashboard':'Sin gimnasio asignado');return}
  safeText($('greeting'),activeGym.name);
  safeText($('gymTitle'),activeGym.name);
  const m=memberships.find(x=>x.gym_id===activeGym.id);
- safeText($('gymRole'),isMaster?'Superadministrador':m?.role||'Usuario');
+ safeText($('gymRole'),isMaster?'Gestión de cliente':m?.role==='owner'?'Titular del gimnasio':m?.role==='admin'?'Administrador':m?.role==='trainer'?'Entrenador':'Deportista');
  const suspended=!['active','trial'].includes(activeGym.status);
  show('licenseNotice',suspended);
  if(suspended)safeText($('licenseNotice'),'Licencia suspendida: no se permite utilizar los datos del gimnasio.');
  paintSections();
 }
 function paintSections(){
+ const gymRole=memberships.find(m=>m.gym_id===activeGym?.id)?.role;
+ const ownerOnly=!isMaster&&['owner','admin'].includes(gymRole);
+ show('gymAdminTab',ownerOnly);
+ show('gymAdmin',ownerOnly);
+ show('athleteTabs',!ownerOnly);
+ if(ownerOnly){renderGymAdministration({db,g:activeGym,root:$('gymAdmin'),notify:notice,resetAccount:async(member)=>{if(!confirm('¿Enviar un correo para restablecer la contraseña de este deportista? Su información permanecerá intacta.'))return;try{const {data,error}=await db.functions.invoke('fitos-reset-member',{body:{gym_id:activeGym.id,user_id:member}});if(error)throw error;if(!data?.ok)throw Error(data?.error||'No se pudo solicitar el correo.');notice('Solicitud enviada. La entrega está sujeta al límite de correos de Supabase.')}catch(e){notice(errorMessage(e))}}}).catch(e=>notice(errorMessage(e)));loadOverview().catch(e=>notice(errorMessage(e)));return}
  const measureEnabled=isMaster||gymModules.find(m=>m.gym_id===activeGym?.id&&m.module_key==='measurements')?.enabled===true;
  const trainEnabled=isMaster||gymModules.find(m=>m.gym_id===activeGym?.id&&m.module_key==='training')?.enabled===true;
  show('tabMeasurements',measureEnabled);show('tabPlans',trainEnabled);
@@ -76,13 +83,13 @@ function paintSections(){
  for(const name of ['overview','measurements','plans'])show(name,view===name);
  if(!activeGym)return;
  if(!['active','trial'].includes(activeGym.status)){for(const name of ['overview','measurementRows','planRows'])clear(name);$('addMeasure').hidden=true;return}
- $('addMeasure').hidden=false;
+ $('addMeasure').hidden=isMaster||gymRole!=='athlete';
  if(view==='overview')loadOverview().catch(e=>notice(errorMessage(e)));
  if(view==='measurements')loadMeasurements().catch(e=>notice(errorMessage(e)));
  if(view==='plans')loadPlans().catch(e=>notice(errorMessage(e)));
 }
 async function loadOverview(){
- const root=$('overview');root.replaceChildren();
+ const root=(!isMaster&&['owner','admin'].includes(memberships.find(m=>m.gym_id===activeGym.id)?.role))?$('ownerManagement'):$('overview');root.replaceChildren();
  const list=await request('fitos_branches','id,name',[['gym_id',activeGym.id]]);
  root.append(node('h3','Sucursales ('+list.length+')'));
  for(const branch of list){const row=node('div','','row');row.append(node('strong',branch.name));root.append(row)}
@@ -92,7 +99,7 @@ async function loadOverview(){
   const {data:members,error:membersError}=await db.rpc('fitos_list_gym_members',{g:activeGym.id});if(membersError)throw membersError;
   if(!members?.length)panel.append(node('p','No hay usuarios asignados.'));
   for(const member of members||[]){
-   const r=node('div','','row');const d=node('div');d.append(node('strong',member.user_id),node('p',member.member_role+' · '+(member.enabled?'Activo':'Desactivado'),'small'));r.append(d);
+   const r=node('div','','row');const d=node('div');d.append(node('strong',member.email||member.user_id),node('p',member.member_role+' · '+(member.enabled?'Activo':'Desactivado'),'small'));r.append(d);
    if(member.user_id!==auth.id){const action=button(member.enabled?'Desactivar acceso':'Reactivar acceso',async()=>{
     if(!confirm('¿Confirmar el cambio de acceso?'))return;
     action.disabled=true;try{const {error}=await db.rpc('fitos_set_member_access',{g:activeGym.id,member:member.user_id,allow_access:!member.enabled});if(error)throw error;notice('Acceso actualizado.');await loadOverview()}catch(err){action.disabled=false;notice(errorMessage(err))}
@@ -129,6 +136,7 @@ async function loadMeasurements(){
 }
 async function addMeasurement(e){
  e.preventDefault();if(!activeGym||!['active','trial'].includes(activeGym.status))return;
+ if(isMaster||memberships.find(m=>m.gym_id===activeGym.id)?.role!=='athlete')return notice('Solo el deportista puede registrar sus propias mediciones.');
  const date=$('measureDate').value,weight=Number($('measureWeight').value);
  if(!date||date>localDate()||!Number.isFinite(weight)||weight<20||weight>400)return notice('Revisa la fecha y el peso.');
  try{const {error}=await db.from('fitos_measurements').upsert({gym_id:activeGym.id,athlete_id:auth.id,measured_on:date,weight_kg:weight,origin:'manual'},{onConflict:'gym_id,athlete_id,measured_on'});if(error)throw error;$('measureWeight').value='';notice('Medición guardada.');await loadMeasurements()}catch(err){notice(errorMessage(err))}
@@ -136,8 +144,10 @@ async function addMeasurement(e){
 async function loadPlans(){
  await renderTraining({db,gym:activeGym,auth,role:isMaster?'superadmin':memberships.find(m=>m.gym_id===activeGym.id)?.role||'athlete',root:$('planRows'),notify:notice});
 }
-function paintMaster(){
+async function paintMaster(){
  const root=$('masterGyms');root.replaceChildren();if(!isMaster)return;
+ await renderMainDashboard({db,gyms,root,refresh,notify:notice});
+ const settings=$('masterSettings');settings.replaceChildren();
  for(const g of gyms){const row=node('div','','row');const info=node('div');info.append(node('strong',g.name),node('p',g.slug+' · '+g.status+' · límite '+g.member_limit,'small'));row.append(info);
  const select=node('select');select.setAttribute('aria-label','Estado de '+g.name);
  for(const status of ['trial','active','suspended','cancelled']){const opt=node('option',status);opt.value=status;opt.selected=status===g.status;select.append(opt)}
@@ -159,7 +169,7 @@ function paintMaster(){
    catch(err){checkbox.checked=!enabled;notice(errorMessage(err))}finally{checkbox.disabled=false}
   };moduleBox.append(lab);
  }
- const domainBox=node('div');domainBox.append(row,moduleBox,domainForm);root.append(domainBox)}
+ const domainBox=node('div','','client-settings');domainBox.append(row,moduleBox,domainForm);settings.append(domainBox)}
 }
 async function createGym(e){
  e.preventDefault();if(!isMaster)return;

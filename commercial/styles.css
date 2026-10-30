@@ -2,3 +2,21 @@
 .member-section{border-top:1px solid #dbe0e2;margin-top:20px;padding-top:14px}#gymPicker button[aria-current=page]{border-color:#c35d15}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #165b91;outline-offset:2px}
 
 .module-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:4px 0 12px}.module-toggle{display:inline-flex;align-items:center;gap:7px;margin:0;font-weight:500}.module-toggle input{width:20px;min-height:20px;accent-color:#b55312}
+
+/* FitOS management UX: responsive, separate from training workspace. */
+.metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+.metric{display:flex;flex-direction:column;gap:8px;border:1px solid #e3e8e8;border-radius:14px;padding:16px;background:#fbfcfc;min-width:0}
+.metric small{font-size:12px;color:#64717a}.metric strong{font-size:clamp(23px,3vw,31px);font-variant-numeric:tabular-nums}
+.client-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.client-card,.member-account{min-width:0;background:#fff;border:1px solid #dfe5e5;border-radius:14px;padding:16px}
+.client-card h3{margin:0}.client-card p{margin:5px 0;overflow-wrap:anywhere}
+.client-edit{border-top:1px solid #e3e8e8;padding-top:10px;margin-top:8px}
+.client-edit label{margin-top:8px}.client-edit input,.client-edit textarea{width:100%;max-width:100%}
+.member-account{margin:12px 0}.member-account .inline-form label{min-width:170px}
+.settings-accordion{margin-top:18px;border-top:1px solid #dee3e4;padding:14px 0}
+.settings-accordion summary{cursor:pointer;font-weight:650;padding:8px 0}
+.client-settings{margin:10px 0;border:1px solid #dfe5e5;border-radius:12px;padding:12px}
+#gymPicker{align-items:center}#gymPicker button{max-width:100%;overflow-wrap:anywhere}
+#status{overflow-wrap:anywhere}.panel,.row,.heading{min-width:0}
+@media(max-width:700px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.client-grid{grid-template-columns:1fr}.top{flex-wrap:wrap}.row{align-items:stretch}.row select{max-width:100%}}
+@media(max-width:360px){.metric-grid{grid-template-columns:1fr}}

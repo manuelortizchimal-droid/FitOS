@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 const read=f=>readFileSync(new URL('../'+f,import.meta.url),'utf8');
 test('Commercial client and build scripts parse',()=>{
- for(const f of ['commercial/app.js','commercial/training.js','scripts/build.mjs']){
+ for(const f of ['commercial/app.js','commercial/training.js','commercial/administration.js','scripts/build.mjs']){
   const code=spawnSync(process.execPath,['--check',new URL('../'+f,import.meta.url).pathname],{encoding:'utf8'});
   assert.equal(code.status,0,code.stderr);
  }
@@ -115,4 +115,15 @@ test('Gym access and local date hardening',()=>{
  for(const key of ['Member limit reached','fitos_list_gym_members','auth.users','pg_advisory_xact_lock','fitos_set_member_access'])assert.ok(sql.includes(key),key);
  const app=read('commercial/app.js');const workout=read('commercial/training.js');
  for(const src of [app,workout]){assert.ok(src.includes('function localDate')||src.includes('const localDate'));assert.ok(!src.includes("toLocaleDateString('en-CA')"))}
+});
+
+test('Main Dashboard, tenant management and account recovery boundaries',()=>{
+ const src=read('commercial/app.js'),adm=read('commercial/administration.js'),page=read('app/index.html');
+ for(const k of ['Main Dashboard','renderMainDashboard','renderGymAdministration','fitos-reset-member','ownerManagement'])assert.ok(src.includes(k)||page.includes(k),k);
+ for(const k of ['fitos_gym_stats','fitos_save_client','fitos_set_member_billing','Sin información de pago'])assert.ok(adm.includes(k),k);
+ assert.ok(!adm.includes('innerHTML'));
+ const sql=read('supabase/migrations/0012_client_crm_and_retention.sql');
+ for(const k of ['enable row level security','fitos_gym_stats','fitos_save_client','fitos_set_member_billing','fitos_client_details'])assert.ok(sql.includes(k),k);
+ const recovery=read('supabase/functions/fitos-reset-member/index.ts');
+ for(const k of ['fitos_can_manage','fitos_list_gym_members','resetPasswordForEmail','verify_jwt'])assert.ok(recovery.includes(k)||k==='verify_jwt',k);
 });
