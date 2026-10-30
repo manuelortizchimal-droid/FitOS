@@ -1,25 +1,28 @@
-# FitOS — Prueba v1.0
+# FitOS — Prueba funcional v1.1
 
-**[Abrir FitOS v1.0](https://manuelortizchimal-droid.github.io/FitOS/?v=1.0)**
+[**Abrir FitOS v1.1**](https://manuelortizchimal-droid.github.io/FitOS/?v=1.1)
 
-## Nuevas funciones
-- **Cuerpo completo**: opción exclusiva que selecciona las siete zonas del catálogo. La duración e intensidad ajustan automáticamente el número de series. No combina simultáneamente esta opción con músculos individuales.
-- **Técnica guiada**: el usuario ve fases excéntrica (negativa), concéntrica, pausas isométricas y tempo en segundos por repetición, ajustados a suave/moderada/alta. No se prescriben pesos ni se exige fallo muscular o técnicas avanzadas.
-- **FIN**: únicamente habilitado al registrar todas las series. Guarda fecha y clave de la sesión, no permite finalizar esa misma sesión dos veces. La racha cuenta **fechas únicas consecutivas**, no series ni sesiones repetidas el mismo día.
-- **Mensaje al terminar**: frase positiva original y botón para volver al inicio. No pretende sustituir apoyo profesional de salud mental.
-- **Cronómetro flotante**: accesible en los módulos, arrastrable, minimizable, cronómetro ascendente desde cero en segundos, iniciar, pausar, detener y poner a cero; valores sugeridos 60, 90, 120 y 180 s; puede iniciarse automáticamente desde cada ejercicio. Usa fecha/hora real tras suspensión de pestañas, no ofrece notificaciones con pantalla bloqueada.
+## Cambios
+- **kg/lb por deportista:** selector en Entrenar y Mi perfil. Los registros se conservan internamente en kg y se convierten a libras según la preferencia (1 kg = 2.2046226218 lb). El historial refleja esa preferencia.
+- **RIR:** explicación desplegable en cada ejercicio: repeticiones en reserva. RIR 3 significa que podrías realizar 3 repeticiones adicionales con buena técnica.
+- **Cronómetro flotante simplificado:** iniciar/pausar, reiniciar, minimizar, arrastrar y elegir 60, 90, 120 o 180 segundos. Cuenta segundos ascendentes; se pone rojo al superar la duración.
+- **Avisos opcionales:** sin aviso (por defecto), sonido de dos tonos o vibración si el teléfono/navegador es compatible. La selección se guarda por usuario en la demo. El aviso ocurre solo una vez al llegar al tiempo seleccionado.
+- **Diseño:** controles compactos y textos legibles en móvil.
 
-## Verificaciones
+## Verificaciones ejecutadas
 - Sintaxis JavaScript: PASS.
-- 3,528 combinaciones de objetivo, duración de sesión, intensidad, número de músculos, cuerpo completo y frecuencia semanal: sin rutinas vacías, con cobertura de todas las zonas y dentro del tiempo estimado (0 fallas).
-- Racha de 3 días con dos entrenamientos en la misma fecha: sigue contando 3, no 4.
-- Código v1.0 comprobado en GitHub después del commit.
-- **Pendiente**: pruebas táctiles y visuales reales en navegadores móviles, integración Supabase, validación segura de roles y persistencia, carga y disponibilidad. Las estimaciones de duración son orientativas, no cronometra automáticamente la ejecución real.
+- 14 casos de conversión kg → lb → kg, redondeos incluidos: PASS.
+- Reloj simulado: alarma una sola vez al alcanzar 60 s, indicador rojo y reinicio a cero: PASS.
+- Lectura del código publicado y conservación de la clave anterior de la demo: PASS.
 
-## Referencias
-- [ACSM 2026: entrenamiento progresivo](https://www.acsm.org/wp-content/uploads/2026/03/Resistance-Training-Position-Stand-infographic.pdf)
-- [ACSM: velocidad y tempo de repetición](https://doi.org/10.1249/fit.0000000000000814)
-- [OMS: fortalecimiento de principales grupos musculares](https://www.ncbi.nlm.nih.gov/books/NBK566046/)
+No se han probado los efectos físicos de sonido/vibración en dispositivos reales ni la regresión visual integral de móviles. La integración con Supabase sigue pendiente.
 
-## Aviso de seguridad
-**SOLO DEMO PÚBLICA.** No hay autenticación real ni Supabase. Los datos, sesiones, roles y cuentas de demostración permanecen en localStorage del navegador y no constituyen controles de acceso seguros. Usar únicamente datos inventados y contraseñas exclusivas de prueba. Los registros guardados antes de la versión actual se conservan si el navegador mantiene la clave local previa.
+## Compatibilidad
+- El sonido utiliza Web Audio API y puede requerir un toque inicial; puede no reproducirse al bloquear la pantalla o cambiar de aplicación.
+- La vibración requiere la API Vibration, no disponible en Safari de iPhone y otros navegadores. La opción se deshabilita cuando no existe soporte.
+- No se garantizan alertas con pantalla bloqueada ni fuera de la aplicación.
+
+Fuentes: [Vibration API — MDN](https://developer.mozilla.org/en-US/docs/Web/API/Vibration_API) y [Web Audio — MDN](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices).
+
+## Seguridad
+**DEMO PÚBLICA — NO USAR DATOS REALES.** Sin Supabase, autenticación segura, autorización de servidor ni facturación verificada. Usar correos y contraseñas ficticios.
