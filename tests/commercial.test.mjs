@@ -143,3 +143,22 @@ test('Athlete entry, invitation callback and profile onboarding',()=>{
  assert.ok(athlete.includes('../commercial/app.js'));
  for(const x of ['No active athlete membership','auth.uid()','fitos_profiles'])assert.ok(sql.includes(x),x);
 });
+
+test('Main Dashboard shows clients without per-gym master tabs',()=>{
+ const app=read('commercial/app.js'),admin=read('commercial/administration.js'),css=read('commercial/styles.css');
+ assert.ok(app.includes("show('gymPicker',!isMaster)"));
+ assert.ok(app.includes('if(isMaster)activeGym=null'));
+ assert.ok(admin.includes("btn('Ver'"));
+ assert.ok(admin.includes("btn('Editar'"));
+ assert.ok(admin.includes("reportClient({g,d,s,notify})"));
+ assert.ok(admin.includes("btn('Ver reporte de gestión'"));
+ assert.ok(admin.includes("roleSelect.value==='trainer'"));
+ assert.ok(admin.includes("db.functions.invoke('fitos-invite'"));
+ assert.ok(css.includes('[hidden]{display:none!important}'));
+});
+test('Invitation email template renders a tokenized short call to action',()=>{
+ const src=read('supabase/email-templates/invite-user.html');
+ assert.ok(src.includes('Ingresa aquí'));
+ assert.ok(src.includes('href="{{ .ConfirmationURL }}"'));
+ assert.ok(!src.includes('localhost'));
+});

@@ -47,21 +47,22 @@ async function refresh(){
  const host=location.hostname.toLowerCase();
  const domains=await request('fitos_domains','gym_id,hostname,verified',[['hostname',host]]);
  if(!isMaster){gyms=gyms.filter(g=>memberships.some(m=>m.gym_id===g.id&&m.enabled));if(domains.length){gyms=gyms.filter(g=>g.id===domains[0].gym_id)}}
- if(!activeGym||!gyms.some(g=>g.id===activeGym.id)){activeGym=isMaster?null:(gyms.find(g=>g.status==='active'||g.status==='trial')||gyms[0]||null)}
+ if(isMaster)activeGym=null;
+ else if(!activeGym||!gyms.some(g=>g.id===activeGym.id)){activeGym=gyms.find(g=>g.status==='active'||g.status==='trial')||gyms[0]||null}
  else activeGym=gyms.find(g=>g.id===activeGym.id);
  paint();
  }catch(e){notice(errorMessage(e));clear('gymPicker');clear('overview');clear('masterGyms');}
 }
 function paint(){
  safeText($('identity'),auth.email);
- show('master',isMaster&&!activeGym);
+ show('master',isMaster);
  const picker=$('gymPicker');picker.replaceChildren();
- if(isMaster)picker.append(button('Main Dashboard',()=>{activeGym=null;paint()},'outline'));
- for(const g of gyms)picker.append(button(g.name,()=>{activeGym=g;paint();},activeGym?.id===g.id?'':'outline'));
- if(isMaster&&!activeGym)picker.querySelector('button')?.setAttribute('aria-current','page');
- if(isMaster&&!activeGym){paintMaster().catch(e=>notice(errorMessage(e)))}
+ // Platform administrators manage all clients on one screen; no per-gym navigation tabs.
+ show('gymPicker',!isMaster);
+ if(!isMaster)for(const g of gyms)picker.append(button(g.name,()=>{activeGym=g;paint()},activeGym?.id===g.id?'':'outline'));
+ if(isMaster){paintMaster().catch(e=>notice(errorMessage(e)))}
  show('gymHome',!!activeGym);
- if(!activeGym){safeText($('greeting'),isMaster?'Main Dashboard':'Sin gimnasio asignado');return}
+ if(!activeGym){safeText($('greeting'),isMaster?'Main Dashboard':'Sin gimnasio asignado');show('licenseNotice',false);return}
  safeText($('greeting'),activeGym.name);
  safeText($('gymTitle'),activeGym.name);
  const m=memberships.find(x=>x.gym_id===activeGym.id);
@@ -117,7 +118,7 @@ async function loadOverview(){
  const invitation=node('form');invitation.append(node('h3','Invitar usuario'));
  const email=node('input');email.type='email';email.required=true;email.maxLength=254;email.placeholder='correo@ejemplo.com';email.setAttribute('aria-label','Correo a invitar');
  const role=node('select');role.setAttribute('aria-label','Rol del invitado');
- for(const option of ['athlete','trainer','admin',...(isMaster?['owner']:[])]){const item=node('option',option);item.value=option;role.append(item)}
+ for(const [key,label] of [['athlete','Deportista'],['trainer','Entrenador'],['admin','Administrador'],...(isMaster?[['owner','Titular del gimnasio']]:[])]){const item=node('option',label);item.value=key;role.append(item)}
  const branch=node('select');branch.setAttribute('aria-label','Sucursal del invitado');const empty=node('option','Sin sucursal');empty.value='';branch.append(empty);
  for(const item of list){const option=node('option',item.name);option.value=item.id;branch.append(option)}
  const send=node('button','Enviar invitación');send.type='submit';

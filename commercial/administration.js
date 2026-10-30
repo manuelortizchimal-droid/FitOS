@@ -9,7 +9,7 @@ function metrics(node,values){const grid=text('div',undefined,'metric-grid');for
 function error(e){return e?.message||'No fue posible completar la operación.'}
 export async function renderMainDashboard({db,gyms,root,refresh,notify}){
  root.replaceChildren();
- const head=text('div',undefined,'heading');head.append(text('h2','Main Dashboard'),text('span','Gestión de clientes · FitOS','small'));root.append(head);
+ const head=text('div',undefined,'heading');head.append(text('h2','Resumen de operación'),text('span','Gestión de clientes · FitOS','small'));root.append(head);
  const detailRes=await db.from('fitos_client_details').select('gym_id,legal_contact,phone,email,notes');
  if(detailRes.error)throw detailRes.error;
  const details=new Map((detailRes.data||[]).map(x=>[x.gym_id,x]));
@@ -27,11 +27,56 @@ export async function renderMainDashboard({db,gyms,root,refresh,notify}){
   panel.append(text('p','Desde: '+(g.created_at?new Date(g.created_at).toLocaleDateString('es-MX'):'Sin fecha'),'small'));
   panel.append(text('p',`Usuarios: ${s.total||0} · Activos: ${s.active||0} · Bajas: ${s.disabled||0}`,'small'));
   const controls=text('div',undefined,'actions');
-  controls.append(btn('Editar cliente',()=>editClient({db,g,d,root:panel,refresh,notify})));
-  controls.append(btn('Reporte de gestión',()=>reportClient({db,g,d,s,notify})));
+  controls.append(btn('Ver',()=>viewClient({db,g,d,s,notify}).catch(e=>notify(error(e))),'primary'));
+  controls.append(btn('Editar',()=>editClient({db,g,d,root:panel,refresh,notify})));
   panel.append(controls);body.append(panel);
  }
  if(!gyms.length)body.append(text('p','Todavía no hay gimnasios registrados.'));
+}
+async function viewClient({db,g,d,s,notify}){
+ const old=document.getElementById('fitos-client-profile');
+ if(old)old.remove();
+ const dialog=text('dialog',undefined,'report-dialog client-dialog');dialog.id='fitos-client-profile';
+ const head=text('div',undefined,'report-heading');
+ head.append(text('h2','Perfil del cliente'),text('span',statusName[g.status]||g.status,'tag'));
+ dialog.append(head,text('h3',g.name));
+ const details=text('section',undefined,'report-section');
+ for(const [label,value] of [['Titular',d.legal_contact],['Teléfono',d.phone],['Correo electrónico',d.email],['Cliente desde',g.created_at?new Date(g.created_at).toLocaleDateString('es-MX'):''],['Identificador',g.slug]]){
+  const line=text('p',undefined,'profile-detail');line.append(text('strong',label+': '),text('span',value||'Sin registrar'));details.append(line);
+ }
+ dialog.append(details,text('h4','Indicadores de gestión'));
+ metrics(dialog,[['Usuarios registrados',s.total||0],['Usuarios activos',s.active||0],['Accesos desactivados',s.disabled||0],['Renovaciones en 30 días',s.renewing_30d||0],['Mensualidades vencidas',s.overdue||0],['Sin datos de pago',s.unknown_billing||0]]);
+ const notes=text('section',undefined,'report-section');notes.append(text('h4','Notas del cliente'),text('p',d.notes||'Sin notas registradas.'));dialog.append(notes);
+ const reportSection=text('section',undefined,'report-section');reportSection.append(text('h4','Reportes'));
+ reportSection.append(text('p','Revisa los indicadores de actividad, acceso y renovaciones registrados. Puedes generar un informe imprimible para seguimiento y toma de decisiones.','small'));
+ reportSection.append(btn('Ver reporte de gestión',()=>{dialog.close();reportClient({g,d,s,notify})},'primary'));
+ dialog.append(reportSection);
+ const inviteSection=text('section',undefined,'report-section');
+ inviteSection.append(text('h4','Invitar usuario'));
+ inviteSection.append(text('p','Introduce el correo electrónico y selecciona el rol y la sucursal. FitOS enviará un enlace de activación personal.','small'));
+ const form=text('form',undefined,'invite-form');
+ const efield=field('Correo electrónico','','email');efield.input.required=true;efield.input.maxLength=254;efield.input.autocomplete='off';
+ const roleLabel=text('label','Rol'),roleSelect=text('select');
+ for(const [key,label] of [['athlete','Deportista'],['trainer','Entrenador'],['admin','Administrador'],['owner','Titular del gimnasio']]){const option=text('option',label);option.value=key;roleSelect.append(option)}
+ roleLabel.append(roleSelect);
+ const branchLabel=text('label','Sucursal'),branchSelect=text('select');
+ const noBranch=text('option','Sin sucursal');noBranch.value='';branchSelect.append(noBranch);
+ const {data:branches,error:branchError}=await db.from('fitos_branches').select('id,name').eq('gym_id',g.id);
+ if(branchError)throw branchError;
+ for(const branch of branches||[]){const opt=text('option',branch.name);opt.value=branch.id;branchSelect.append(opt)}
+ branchLabel.append(branchSelect);
+ const submit=text('button','Enviar invitación');submit.type='submit';
+ form.append(efield.label,roleLabel,branchLabel,submit);
+ form.onsubmit=async event=>{event.preventDefault();submit.disabled=true;try{
+  if(roleSelect.value==='trainer'&&!branchSelect.value)throw Error('Selecciona una sucursal para el entrenador.');
+  const {data,error}=await db.functions.invoke('fitos-invite',{body:{gym_id:g.id,email:efield.input.value.trim(),role:roleSelect.value,branch_id:branchSelect.value||null}});
+  if(error)throw error;if(!data?.ok)throw Error(data?.error||'No fue posible enviar la invitación.');
+  efield.input.value='';notify('Invitación solicitada correctamente. Verifica que el correo se haya entregado.');
+ }catch(err){notify(error(err))}finally{submit.disabled=false}};
+ inviteSection.append(form);
+ dialog.append(inviteSection);
+ const actions=text('div',undefined,'actions');actions.append(btn('Cerrar',()=>dialog.close()));dialog.append(actions);
+ dialog.onclose=()=>dialog.remove();document.body.append(dialog);dialog.showModal();
 }
 function editClient({db,g,d,root,refresh,notify}){
  const previous=root.querySelector('.client-edit');if(previous){previous.remove();return}
