@@ -35,6 +35,17 @@ Deno.serve(async req=>{
    const {data:master}=await acting.rpc('fitos_is_platform_admin');
    if(master!==true)return json({error:'Forbidden'},403,origin);
   }
+  // Reject invalid requests before sending a non-transactional Auth email.
+  const {data:gym,error:gymError}=await acting.from('fitos_gyms').select('status,member_limit').eq('id',gym_id).single();
+  if(gymError||!gym||!['active','trial'].includes(gym.status))return json({error:'Gym is not accepting invitations'},409,origin);
+  if(role==='trainer'&&!branch_id)return json({error:'Trainer requires branch'},400,origin);
+  if(branch_id){
+   const {data:foundBranch,error:branchError}=await acting.from('fitos_branches').select('id').eq('id',branch_id).eq('gym_id',gym_id).maybeSingle();
+   if(branchError||!foundBranch)return json({error:'Invalid gym branch'},400,origin);
+  }
+  const {count,error:seatError}=await acting.from('fitos_memberships').select('id',{head:true,count:'exact'}).eq('gym_id',gym_id).eq('enabled',true);
+  if(seatError||count===null)return json({error:'Unable to verify seat capacity'},503,origin);
+  if(count>=gym.member_limit)return json({error:'Gym member limit reached'},409,origin);
   const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
   const {data:invited,error:inviteError}=await admin.auth.admin.inviteUserByEmail(email,{redirectTo:redirect});
   if(inviteError||!invited.user){console.error('FitOS invitation failed',inviteError?.code);return json({error:'Invitation could not be created'},409,origin)}
