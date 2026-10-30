@@ -14,7 +14,7 @@
 </section>
 <section id="review" class="card" hidden><h2>2. Revisa los ejercicios detectados</h2><p class="hint">Puedes cambiar nombre, series, repeticiones, RIR, descanso y notas. El texto no reconocido no se guardará automáticamente.</p><div id="parsedRows"></div><div class="actions"><button class="secondary" id="addExercise">Agregar ejercicio</button><button id="clearReview" class="secondary">Volver a analizar</button></div>
 <div class="cols"><div><label for="duration">Guardar este plan durante</label><select id="duration"><option value="7">Una semana</option><option value="14">Dos semanas</option><option value="30">Un mes</option></select></div><div><label for="startDate">¿Cuándo quieres comenzar el Día 1?</label><input id="startDate" type="date"></div></div>
-<p class="hint">Si has importado varios días, se convertirán en entrenamientos distintos de tu plan, con un máximo de seis días por semana. Un plan nuevo reemplaza al plan activo, pero conserva los registros anteriores.</p>
+<p class="hint">Si has importado varios días, se convertirán en entrenamientos distintos de tu plan, con un máximo de siete días por semana. Un plan nuevo reemplaza al plan activo, pero conserva los registros anteriores.</p>
 <div class="actions"><button id="savePlan">Guardar plan revisado en FitOS</button></div></section>
 <section class="card"><h2>¿Qué significan estos términos? <span class="help" title="Explicación de términos">?</span></h2>
 <details><summary>Glosario rápido de entrenamiento</summary><p><b>Drop set:</b> reducir carga y continuar la serie, una técnica avanzada. <b>RIR:</b> repeticiones que aún podrías hacer con técnica correcta. <b>Tempo:</b> segundos por fase de la repetición. <b>Excéntrica o negativa:</b> movimiento controlado mientras el músculo se alarga. <b>Concéntrica:</b> fase de levantar o empujar. <b>Isometría:</b> mantener una posición. <b>Fatiga:</b> disminución temporal del rendimiento. <b>Superserie:</b> dos ejercicios seguidos con poco descanso. <b>Fallo muscular:</b> no poder completar otra repetición sin perder técnica.</p></details>
@@ -34,7 +34,7 @@ function parseRoutine(text){
  const lines=String(text||'').slice(0,60000).split(/\r?\n/).map(normalizedLine).filter(Boolean);const result=[];let day=1;
  for(const line of lines){
   const header=line.match(/^(?:día|dia|day|sesión|sesion|lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)\s*(\d{1,2})?\s*[:\-–. ]*(.*)$/i);
-  if(header && (header[1] || /^(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)/i.test(line))){day=header[1]?Number(header[1]):Math.min(day+1,6);continue}
+  if(header && (header[1] || /^(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)/i.test(line))){day=header[1]?Number(header[1]):Math.min(day+1,7);continue}
   const sep=/[\t;,|]/.test(line);const columns=sep?line.split(/[\t;,|]/).map(x=>x.trim()).filter(Boolean):[];
   if(columns.length>=3 && /^(ejercicio|exercise|nombre|músculo|musculo)$/i.test(columns[0]))continue;
   let name='',sets=3,reps='10–12',rir=3,rest=90,notes='';
@@ -51,14 +51,14 @@ function parseRoutine(text){
   const technique=notes.match(/drop\s*set|dropset|superserie|isom[eé]tric[ao]|fatiga|negativ[ao]/ig);
   notes=[tempo?'Tempo '+tempo[1].replaceAll('–','-'):'',technique?technique.join(', '):'',notes.trim()].filter(Boolean).join(' · ').slice(0,300);
   reps=String(reps).replace(/\s*[-–]\s*/g,'–').slice(0,20);
-  result.push({day:Math.min(Math.max(day,1),6),name,sets,reps,rir,rest:Math.max(30,Math.min(300,rest)),notes});
+  result.push({day:Math.min(Math.max(day,1),7),name,sets,reps,rir,rest:Math.max(30,Math.min(300,rest)),notes});
   if(result.length>=100)break;
  }
  return result;
 }
 function renderDraft(){
  $('#review').hidden=false;
- $('#parsedRows').innerHTML=draft.map((item,i)=>`<div class="row" data-i="${i}"><div class="titlebar"><b>Ejercicio ${i+1}</b><button class="secondary" type="button" data-remove="${i}">Quitar</button></div><label>Nombre</label><input data-field="name" value="${safe(item.name)}" maxlength="100"><div class="row-fields"><div><label>Día</label><input data-field="day" type="number" min="1" max="6" value="${item.day}"></div><div><label>Series</label><input data-field="sets" type="number" min="1" max="10" value="${item.sets}"></div><div><label>Reps</label><input data-field="reps" value="${safe(item.reps)}"></div><div><label>RIR</label><input data-field="rir" type="number" min="0" max="10" value="${item.rir}"></div></div><label>Descanso (segundos)</label><input data-field="rest" type="number" min="30" max="300" value="${item.rest}"><label>Notas y técnica</label><input data-field="notes" value="${safe(item.notes)}" maxlength="300"></div>`).join('');
+ $('#parsedRows').innerHTML=draft.map((item,i)=>`<div class="row" data-i="${i}"><div class="titlebar"><b>Ejercicio ${i+1}</b><button class="secondary" type="button" data-remove="${i}">Quitar</button></div><label>Nombre</label><input data-field="name" value="${safe(item.name)}" maxlength="100"><div class="row-fields"><div><label>Día</label><input data-field="day" type="number" min="1" max="7" value="${item.day}"></div><div><label>Series</label><input data-field="sets" type="number" min="1" max="10" value="${item.sets}"></div><div><label>Reps</label><input data-field="reps" value="${safe(item.reps)}"></div><div><label>RIR</label><input data-field="rir" type="number" min="0" max="10" value="${item.rir}"></div></div><label>Descanso (segundos)</label><input data-field="rest" type="number" min="30" max="300" value="${item.rest}"><label>Notas y técnica</label><input data-field="notes" value="${safe(item.notes)}" maxlength="300"></div>`).join('');
  document.querySelectorAll('[data-remove]').forEach(btn=>btn.onclick=()=>{readDraft();draft.splice(Number(btn.dataset.remove),1);renderDraft()});
  $('#review').scrollIntoView({behavior:'smooth',block:'start'});say(draft.length+' ejercicio(s) detectado(s). Revísalos antes de guardar.');
 }
@@ -83,7 +83,7 @@ $('#fileInput').onchange=async event=>{const file=event.target.files?.[0];if(!fi
 document.addEventListener('paste',async event=>{const image=[...(event.clipboardData?.items||[])].find(x=>x.type.startsWith('image/'));if(!image)return;event.preventDefault();try{const text=await ocrImage(image.getAsFile());$('#pasteText').value=text.slice(0,60000);parseAndReview(text)}catch(err){say('Error al leer la captura: '+err.message)}});
 $('#savePlan').onclick=()=>{
  if(!user||!db)return say('Inicia sesión como deportista para guardar.');
- readDraft();if(!draft.length||draft.some(e=>!e.name||e.name.length>100||!Number.isInteger(e.day)||e.day<1||e.day>6||!Number.isInteger(e.sets)||e.sets<1||e.sets>10||!/^\d{1,3}(?:[–-]\d{1,3})?$/.test(e.reps)||!Number.isInteger(e.rir)||e.rir<0||e.rir>10||!Number.isInteger(e.rest)||e.rest<30||e.rest>300))return say('Revisa los campos. Los ejercicios necesitan nombre, series, repeticiones, RIR y descanso válidos.');
+ readDraft();if(!draft.length||draft.some(e=>!e.name||e.name.length>100||!Number.isInteger(e.day)||e.day<1||e.day>7||!Number.isInteger(e.sets)||e.sets<1||e.sets>10||!/^\d{1,3}(?:[–-]\d{1,3})?$/.test(e.reps)||!Number.isInteger(e.rir)||e.rir<0||e.rir>10||!Number.isInteger(e.rest)||e.rest<30||e.rest>300))return say('Revisa los campos. Los ejercicios necesitan nombre, series, repeticiones, RIR y descanso válidos.');
  const start=$('#startDate').value,duration=Number($('#duration').value);if(!/^\d{4}-\d{2}-\d{2}$/.test(start)||start<now())return say('Elige una fecha de inicio desde hoy.');
  const count=Math.max(...draft.map(e=>e.day));const sessions=Array.from({length:count},(_,i)=>{const ex=draft.filter(x=>x.day===i+1).map((x,j)=>({id:'import-'+i+'-'+j+'-'+x.name.toLowerCase().slice(0,15),name:x.name,muscle:'Rutina importada',sets:x.sets,reps:x.reps,rir:x.rir,rest:x.rest,tech:x.notes||'Movimientos controlados y sin dolor.',equipment:'Según disponibilidad',minutes:0}));return {title:'Rutina importada · Día '+(i+1),objective:'custom',intensity:'moderate',minutes:60,estimatedMinutes:Math.min(90,5+ex.reduce((a,x)=>a+x.sets*2,0)),ex}});
  if(sessions.some(x=>!x.ex.length))return say('Hay días sin ejercicios. Asigna días consecutivos entre 1 y '+count+'.');
