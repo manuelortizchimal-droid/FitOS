@@ -1,0 +1,33 @@
+name: FitOS Pages — publicacion directa
+
+on:
+  push:
+    paths:
+      - .github/workflows/fitos-pages-direct.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: fitos-pages-direct
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: fitos-pages-direct
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout FitOS
+        uses: actions/checkout@v4
+      - name: Preparar contenido de GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Publicar FitOS
+        id: deployment
+        uses: actions/deploy-pages@v4
