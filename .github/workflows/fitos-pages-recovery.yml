@@ -1,0 +1,46 @@
+name: FitOS - desbloquear publicacion Pages
+
+on:
+  push:
+    paths:
+      - .github/workflows/fitos-pages-recovery.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  liberar-cola:
+    name: Liberar despliegues obsoletos de Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const result = await github.rest.actions.listWorkflowRunsForRepo({ owner, repo, per_page: 100 });
+            const pending = result.data.workflow_runs.filter(run =>
+              run.name === 'pages build and deployment'
+              && !['completed'].includes(run.status)
+              && run.head_sha !== context.sha
+            );
+            core.info('Old pending Pages runs: ' + pending.map(r => r.id).join(', '));
+            for (const run of pending) {
+              try {
+                await github.rest.actions.cancelWorkflowRun({ owner, repo, run_id: run.id });
+                core.info('Cancel requested for run ' + run.id);
+              } catch (error) {
+                core.warning('Normal cancellation failed on ' + run.id + ': ' + error.message);
+                try {
+                  await github.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/force-cancel', {
+                    owner, repo, run_id: run.id
+                  });
+                  core.info('Force cancellation requested for run ' + run.id);
+                } catch (forced) {
+                  core.warning('Force cancellation failed on ' + run.id + ': ' + forced.message);
+                }
+              }
+            }
+            core.info('Recovery completed. Only the latest Pages workflow should remain.');
