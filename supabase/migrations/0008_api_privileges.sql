@@ -23,13 +23,15 @@ grant insert on public.fitos_gyms, public.fitos_branches,
  public.fitos_plan_days, public.fitos_workouts,
  public.fitos_sets, public.fitos_measurements,
  public.fitos_domains, public.fitos_photo_consents to authenticated;
-grant update on public.fitos_gyms, public.fitos_branches,
+grant update on public.fitos_branches,
  public.fitos_profiles, public.fitos_plans,
  public.fitos_plan_days, public.fitos_workouts,
  public.fitos_sets, public.fitos_measurements,
  public.fitos_domains, public.fitos_photo_consents to authenticated;
 grant delete on public.fitos_branches,
  public.fitos_plan_days, public.fitos_domains to authenticated;
+-- License state must be changed through audited RPC, never direct table UPDATE.
+revoke update on public.fitos_gyms from anon, authenticated;
 -- Superadmin identities and immutable audit events are intentionally not
 -- exposed as direct client write tables.
 revoke insert, update, delete on public.fitos_platform_admins,

@@ -32,8 +32,4 @@ insert into public.fitos_plan_days(id,gym_id,plan_id,day_index,title,exercises) 
  ('11110000-0000-4000-8000-000000000000','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','11100000-0000-4000-8000-000000000000',0,'Día 1','[{"id":"press","name":"Press","sets":2}]');
 insert into public.fitos_workouts(id,gym_id,athlete_id,plan_day_id,workout_date) values
  ('11111000-0000-4000-8000-000000000000','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','11111111-1111-4111-8111-111111111111','11110000-0000-4000-8000-000000000000','2026-10-30');
-grant usage on schema public,auth,storage to authenticated;
-grant select,insert,update,delete on all tables in schema public to authenticated;
-grant usage on all sequences in schema public to authenticated;
-grant select on auth.users to authenticated;
-grant select,insert,update,delete on storage.objects to authenticated;
+-- Deliberately do not grant blanket permissions here. The migration grants are the source of truth.

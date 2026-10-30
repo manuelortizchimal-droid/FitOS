@@ -10,6 +10,9 @@ begin
  if not has_table_privilege('authenticated','public.fitos_measurements','SELECT') then
    raise exception 'Authenticated data API has no measurement read grant';
  end if;
+ if has_table_privilege('authenticated','public.fitos_gyms','UPDATE') then
+   raise exception 'License updates bypass audit RPC';
+ end if;
  if has_table_privilege('authenticated','public.fitos_memberships','UPDATE') then
    raise exception 'Membership direct write privilege must stay revoked';
  end if;
