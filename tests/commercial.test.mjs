@@ -96,3 +96,9 @@ test('GitHub Pages trial uses a public-only Supabase config',()=>{
  assert.ok(!cfg.includes('sb_secret_'));
  assert.ok(cfg.includes('sazudzsdsluygcjivcvf.supabase.co'));
 });
+
+test('Gym modules are controlled by RLS and superadmin RPC',()=>{
+ const sql=read('supabase/migrations/0010_gym_module_controls.sql');
+ for(const x of ['fitos_set_gym_module','fitos_module_enabled','as restrictive','fitos_measurements_module_guard','fitos_workouts_module_guard'])assert.ok(sql.includes(x),x);
+ const client=read('commercial/app.js');for(const x of ['fitos_gym_modules','fitos_set_gym_module'])assert.ok(client.includes(x));
+});

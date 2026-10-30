@@ -4,7 +4,7 @@ import { renderTraining } from './training.js';
 
 const $=id=>document.getElementById(id), show=(id,on)=>$(id).hidden=!on;
 const safeText=(node,value)=>{node.textContent=String(value??'')};
-let db=null,auth=null,gyms=[],activeGym=null,memberships=[],isMaster=false,view='overview',recoveryMode=false;
+let db=null,auth=null,gyms=[],activeGym=null,memberships=[],isMaster=false,view='overview',recoveryMode=false,gymModules=[];
 function notice(message){safeText($('status'),message)}
 function errorMessage(err){return err?.message?.slice(0,240)||'Error de conexión. Intenta de nuevo.'}
 const configured=()=>FITOS_CONFIG?.url?.startsWith('https://') && /^sb_publishable_|^eyJ/.test(FITOS_CONFIG.publishableKey||'');
@@ -37,6 +37,7 @@ async function refresh(){
  isMaster=admin===true;
  memberships=await request('fitos_memberships','gym_id,role,branch_id,enabled,user_id',[['user_id',auth.id]]);
  gyms=await request('fitos_gyms','id,name,slug,status,member_limit,brand_color');
+ gymModules=await request('fitos_gym_modules','gym_id,module_key,enabled');
  const host=location.hostname.toLowerCase();
  const domains=await request('fitos_domains','gym_id,hostname,verified',[['hostname',host]]);
  if(!isMaster){gyms=gyms.filter(g=>memberships.some(m=>m.gym_id===g.id&&m.enabled));if(domains.length){gyms=gyms.filter(g=>g.id===domains[0].gym_id)}}
@@ -65,6 +66,10 @@ function paint(){
  paintSections();
 }
 function paintSections(){
+ const measureEnabled=isMaster||gymModules.find(m=>m.gym_id===activeGym?.id&&m.module_key==='measurements')?.enabled===true;
+ const trainEnabled=isMaster||gymModules.find(m=>m.gym_id===activeGym?.id&&m.module_key==='training')?.enabled===true;
+ show('tabMeasurements',measureEnabled);show('tabPlans',trainEnabled);
+ if((view==='measurements'&&!measureEnabled)||(view==='plans'&&!trainEnabled))view='overview';
  for(const name of ['overview','measurements','plans'])show(name,view===name);
  if(!activeGym)return;
  if(!['active','trial'].includes(activeGym.status)){for(const name of ['overview','measurementRows','planRows'])clear(name);$('addMeasure').hidden=true;return}
@@ -140,7 +145,18 @@ function paintMaster(){
  domainForm.onsubmit=async event=>{event.preventDefault();const hostname=domainInput.value.trim().toLowerCase();
  if(!/^[a-z0-9.-]{4,253}$/.test(hostname)||!hostname.includes('.'))return notice('Dominio inválido.');
  try{const {error}=await db.from('fitos_domains').insert({gym_id:g.id,hostname,verified:false});if(error)throw error;domainInput.value='';notice('Dominio registrado. Configura y verifica DNS/HTTPS en Cloudflare antes de utilizarlo.')}catch(e){notice(errorMessage(e))}};
- const domainBox=node('div');domainBox.append(row,domainForm);root.append(domainBox)}
+ const moduleBox=node('div','','module-controls');
+ moduleBox.append(node('strong','Módulos activos'));
+ for(const [key,label] of [['training','Entrenamiento'],['measurements','Mediciones corporales']]){
+  const status=gymModules.find(m=>m.gym_id===g.id&&m.module_key===key);
+  const lab=node('label');lab.className='module-toggle';const checkbox=node('input');checkbox.type='checkbox';checkbox.checked=status?.enabled===true;
+  checkbox.setAttribute('aria-label',label+' de '+g.name);lab.append(checkbox,node('span',label));
+  checkbox.onchange=async()=>{const enabled=checkbox.checked;checkbox.disabled=true;
+   try{const {error}=await db.rpc('fitos_set_gym_module',{g:g.id,k:key,allow_access:enabled});if(error)throw error;notice('Módulo actualizado.');await refresh()}
+   catch(err){checkbox.checked=!enabled;notice(errorMessage(err))}finally{checkbox.disabled=false}
+  };moduleBox.append(lab);
+ }
+ const domainBox=node('div');domainBox.append(row,moduleBox,domainForm);root.append(domainBox)}
 }
 async function createGym(e){
  e.preventDefault();if(!isMaster)return;
