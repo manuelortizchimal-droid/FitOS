@@ -32,7 +32,9 @@ async function refresh(){
  isMaster=admin===true;
  memberships=await request('fitos_memberships','gym_id,role,branch_id,enabled,user_id',[['user_id',auth.id]]);
  gyms=await request('fitos_gyms','id,name,slug,status,member_limit,brand_color');
- if(!isMaster)gyms=gyms.filter(g=>memberships.some(m=>m.gym_id===g.id&&m.enabled));
+ const host=location.hostname.toLowerCase();
+ const domains=await request('fitos_domains','gym_id,hostname,verified',[['hostname',host]]);
+ if(!isMaster){gyms=gyms.filter(g=>memberships.some(m=>m.gym_id===g.id&&m.enabled));if(domains.length){gyms=gyms.filter(g=>g.id===domains[0].gym_id)}}
  if(!activeGym||!gyms.some(g=>g.id===activeGym.id)){activeGym=gyms.find(g=>g.status==='active'||g.status==='trial')||gyms[0]||null}
  else activeGym=gyms.find(g=>g.id===activeGym.id);
  paint();
@@ -113,7 +115,13 @@ function paintMaster(){
  const select=node('select');select.setAttribute('aria-label','Estado de '+g.name);
  for(const status of ['trial','active','suspended','cancelled']){const opt=node('option',status);opt.value=status;opt.selected=status===g.status;select.append(opt)}
  select.onchange=async()=>{const value=select.value;if(!confirm('¿Confirmar cambio de licencia de '+g.name+' a '+value+'?')){select.value=g.status;return}try{const {error}=await db.rpc('fitos_set_gym_status',{g:g.id,new_status:value});if(error)throw error;notice('Licencia actualizada.');await refresh()}catch(e){select.value=g.status;notice(errorMessage(e))}};
- row.append(select);root.append(row)}
+ row.append(select);
+ const domainForm=node('form');const domainInput=node('input');domainInput.type='text';domainInput.required=true;domainInput.placeholder='sucursal.fitos.mx';domainInput.maxLength=253;domainInput.setAttribute('aria-label','Dominio para '+g.name);
+ const addDomain=node('button','Vincular dominio');addDomain.type='submit';domainForm.append(domainInput,addDomain);
+ domainForm.onsubmit=async event=>{event.preventDefault();const hostname=domainInput.value.trim().toLowerCase();
+ if(!/^[a-z0-9.-]{4,253}$/.test(hostname)||!hostname.includes('.'))return notice('Dominio inválido.');
+ try{const {error}=await db.from('fitos_domains').insert({gym_id:g.id,hostname,verified:false});if(error)throw error;domainInput.value='';notice('Dominio registrado. Configura y verifica DNS/HTTPS en Cloudflare antes de utilizarlo.')}catch(e){notice(errorMessage(e))}};
+ const domainBox=node('div');domainBox.append(row,domainForm);root.append(domainBox)}
 }
 async function createGym(e){
  e.preventDefault();if(!isMaster)return;

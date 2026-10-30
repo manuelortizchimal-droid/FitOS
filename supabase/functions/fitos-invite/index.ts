@@ -9,7 +9,7 @@ const json=(body,status,origin)=>new Response(JSON.stringify(body),{status,heade
 Deno.serve(async req=>{
  const origin=req.headers.get('origin')||'';
  if(!allowed.has(origin))return new Response('Origin not permitted',{status:403});
- if(req.method==='OPTIONS')return json({},204,origin);
+ if(req.method==='OPTIONS')return new Response(null,{status:204,headers:{'vary':'Origin','access-control-allow-origin':origin,'access-control-allow-methods':'POST, OPTIONS','access-control-allow-headers':'authorization, apikey, content-type, x-client-info'}});
  if(req.method!=='POST')return json({error:'Method not allowed'},405,origin);
  if(!url||!anon||!service||!redirect)return json({error:'Server not configured'},503,origin);
  const header=req.headers.get('authorization')||'';

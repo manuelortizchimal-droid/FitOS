@@ -35,3 +35,11 @@ Los backups y la retención de datos deben ser explícitos y acordes a los contr
 - Aplicar también la migración `0003_license_visibility.sql` tras 0001 y 0002.
 - El frontend comercial incluye registro de series, rutinas básicas de 1 a 7 días y finalización de sesión. Está pendiente trasladar todos los métodos avanzados del motor de la demo y probar integración real.
 - El alta de usuario actual envía invitación antes de adjuntar membresía; si falla el segundo paso, requiere revisión administrativa. No enviar invitaciones reales sin ensayo de esta recuperación.
+
+## Seguridad adicional y dominios
+
+- Aplicar migraciones `0004_workout_integrity.sql`, `0005_qualified_rls.sql`, `0006_domains_photos.sql` en ese orden. 0005 corrige explícitamente las referencias de filas en subconsultas RLS: no omitirla.
+- Los cambios de estado de una sesión terminada y la asignación de sesiones se validan también en PostgreSQL; el cliente no es una autoridad de seguridad.
+- `fitos_domains` asocia hostname con gimnasio. FitOS Admin puede registrar dominios; la verificación DNS/HTTPS en Cloudflare sigue siendo una tarea externa. El dominio nunca reemplaza la sesión ni los permisos RLS.
+- `fitos_photo_consents` controla acceso y subida a bucket privado `fitos-photos`, con límite de 5 MiB y tipos JPEG, PNG y WebP. Pendiente implementar UX de consentimiento y fotografías en el cliente comercial.
+- `FITOS_ALLOWED_ORIGINS` y `FITOS_INVITE_REDIRECT_URL` se deben configurar antes de activar invitaciones.

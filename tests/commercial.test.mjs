@@ -50,6 +50,20 @@ test('Commercial bundle deploys only publishable configuration',()=>{
  assert.ok(headers.includes('Content-Security-Policy'));
  assert.ok(headers.includes('frame-ancestors'));
 });
+test('Tenant custom domains and private photo consent declarations exist',()=>{
+ const schema=read('supabase/migrations/0006_domains_photos.sql');
+ for(const marker of ['fitos_domains','fitos_photo_consents','fitos_photo_allowed','storage.buckets',"values('fitos-photos','fitos-photos',false"])assert.ok(schema.includes(marker));
+ assert.ok(read('commercial/app.js').includes("fitos_domains"));
+});
+test('Qualified tenant row-level references are explicit',()=>{
+ const schema=read('supabase/migrations/0005_qualified_rls.sql');
+ for(const marker of ['public.fitos_gyms.id','public.fitos_profiles.id','public.fitos_branches.id','public.fitos_plan_days.plan_id','public.fitos_sets.workout_id'])assert.ok(schema.includes(marker));
+});
+test('Database verifies workout completion and immutable ownership',()=>{
+ const schema=read('supabase/migrations/0004_workout_integrity.sql');
+ assert.ok(schema.includes('Save all required sets before finishing'));
+ assert.ok(schema.includes('Workout ownership cannot change'));
+});
 test('Commercial HTML avoids inline event handlers',()=>{
  const html=read('commercial/index.html');
  assert.ok(html.includes('type="module"'));
