@@ -1,0 +1,27 @@
+name: FitOS QA — regresion
+
+on:
+  push:
+    paths:
+      - 'index.html'
+      - 'import.html'
+      - 'measure-import.html'
+      - 'tests/**'
+      - '.github/workflows/fitos-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Pruebas de regresion FitOS
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar codigo y logica
+        run: node tests/audit.cjs
