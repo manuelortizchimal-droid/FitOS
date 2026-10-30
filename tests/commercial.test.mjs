@@ -105,7 +105,14 @@ test('Gym modules are controlled by RLS and superadmin RPC',()=>{
 
 test('Password recovery callbacks never target localhost',()=>{
  const src=read('commercial/app.js');
- assert.ok(src.includes("const authCallbackURL='https://manuelortizchimal-droid.github.io/FitOS/app/'"));
+ assert.ok(src.includes('const authCallbackURL=new URL('));
  assert.ok(src.includes('resetPasswordForEmail(email,{redirectTo:authCallbackURL})'));
  assert.ok(!src.includes('redirectTo:location.origin+location.pathname'));
+});
+
+test('Gym access and local date hardening',()=>{
+ const sql=read('supabase/migrations/0011_member_limit_email_hardening.sql');
+ for(const key of ['Member limit reached','fitos_list_gym_members','auth.users','pg_advisory_xact_lock','fitos_set_member_access'])assert.ok(sql.includes(key),key);
+ const app=read('commercial/app.js');const workout=read('commercial/training.js');
+ for(const src of [app,workout]){assert.ok(src.includes('function localDate')||src.includes('const localDate'));assert.ok(!src.includes("toLocaleDateString('en-CA')"))}
 });

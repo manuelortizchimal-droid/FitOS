@@ -1,4 +1,5 @@
 // FitOS commercial workout workspace. All content is rendered using safe DOM nodes.
+const localDate=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
 const el=(tag,text)=>{const x=document.createElement(tag);if(text!==undefined)x.textContent=String(text);return x};
 const field=(title,type='text',options={})=>{const lab=el('label',title),input=el('input');input.type=type;for(const [k,v] of Object.entries(options))input[k]=v;lab.append(input);return {lab,input}};
 const message=(notify,e)=>notify(e?.message||String(e));
@@ -19,7 +20,7 @@ export async function renderTraining({db,gym,auth,role,root,notify}){
   const days=field('Entrenamientos por semana (1–7)','number',{min:1,max:7,value:3,required:true});
   const exercise=field('Ejercicio principal por día','text',{required:true,maxLength:120});
   const count=field('Series por ejercicio','number',{min:1,max:10,value:3,required:true});
-  const start=field('Inicio del plan','date',{required:true,value:new Date().toLocaleDateString('en-CA')});
+  const start=field('Inicio del plan','date',{required:true,value:localDate()});
   const athlete=el('select');
   if(admin){
    const label=el('label','Deportista');
@@ -43,7 +44,7 @@ export async function renderTraining({db,gym,auth,role,root,notify}){
     if(created.error)throw created.error;
     const rows=Array.from({length:frequency},(_,i)=>({gym_id:gym.id,plan_id:created.data.id,day_index:i,title:'Día '+(i+1)+' · '+exercise.input.value.trim(),exercises:[{id:crypto.randomUUID(),name:exercise.input.value.trim(),sets,reps:'8–12',rir:2,rest:90}]}));
     const saved=await db.from('fitos_plan_days').insert(rows);
-    if(saved.error){const cleanup=await db.from('fitos_plans').update({active:false}).eq('id',created.data.id).eq('gym_id',gym.id);throw Error('Plan creado, pero no se guardaron sus días. Solicita revisión al administrador.')}
+    if(saved.error){await db.from('fitos_plans').update({active:false}).eq('id',created.data.id).eq('gym_id',gym.id);throw Error('Plan creado, pero no se guardaron sus días. Se desactivó para evitar una rutina incompleta.')}
     notify('Rutina guardada y disponible.');await renderTraining({db,gym,auth,role,root,notify});
    }catch(e){message(notify,e)}finally{submit.disabled=false}
   };
@@ -67,7 +68,7 @@ export async function renderTraining({db,gym,auth,role,root,notify}){
 }
 async function openWorkout({db,gym,auth,plan,day,root,role,notify}){
  try{
-  const now=new Date().toLocaleDateString('en-CA');
+  const now=localDate();
   const result=await db.from('fitos_workouts').select('id,status').eq('gym_id',gym.id).eq('athlete_id',plan.athlete_id).eq('plan_day_id',day.id).eq('workout_date',now).limit(1);
   if(result.error)throw result.error;
   let workout=result.data?.[0];

@@ -6,10 +6,11 @@ const $=id=>document.getElementById(id), show=(id,on)=>$(id).hidden=!on;
 const safeText=(node,value)=>{node.textContent=String(value??'')};
 let db=null,auth=null,gyms=[],activeGym=null,memberships=[],isMaster=false,view='overview',recoveryMode=false,gymModules=[];
 function notice(message){safeText($('status'),message)}
+function localDate(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
 function errorMessage(err){return err?.message?.slice(0,240)||'Error de conexión. Intenta de nuevo.'}
 const configured=()=>FITOS_CONFIG?.url?.startsWith('https://') && /^sb_publishable_|^eyJ/.test(FITOS_CONFIG.publishableKey||'');
 // Keep recovery and invitation callbacks on the published test application, never localhost.
-const authCallbackURL='https://manuelortizchimal-droid.github.io/FitOS/app/';
+const authCallbackURL=new URL(location.pathname.endsWith('/')?location.pathname:location.pathname+'/',location.origin).href;
 function node(tag,text,cls){const el=document.createElement(tag);if(text!==undefined)el.textContent=String(text);if(cls)el.className=cls;return el}
 function button(text,handler,cls='outline'){const b=node('button',text,cls);b.type='button';b.onclick=handler;return b}
 function clear(id){$(id).replaceChildren()}
@@ -124,12 +125,12 @@ async function loadMeasurements(){
  rows.sort((a,b)=>b.measured_on.localeCompare(a.measured_on));
  if(!rows.length)root.append(node('p','Sin mediciones disponibles.'));
  for(const r of rows.slice(0,100)){const row=node('div','','row');row.append(node('span',r.measured_on+' · '+(r.weight_kg??'—')+' kg · '+r.origin));root.append(row)}
- $('measureDate').max=new Date().toLocaleDateString('en-CA');$('measureDate').value=$('measureDate').max;
+ $('measureDate').max=localDate();$('measureDate').value=$('measureDate').max;
 }
 async function addMeasurement(e){
  e.preventDefault();if(!activeGym||!['active','trial'].includes(activeGym.status))return;
  const date=$('measureDate').value,weight=Number($('measureWeight').value);
- if(!date||date>new Date().toLocaleDateString('en-CA')||!Number.isFinite(weight)||weight<20||weight>400)return notice('Revisa la fecha y el peso.');
+ if(!date||date>localDate()||!Number.isFinite(weight)||weight<20||weight>400)return notice('Revisa la fecha y el peso.');
  try{const {error}=await db.from('fitos_measurements').upsert({gym_id:activeGym.id,athlete_id:auth.id,measured_on:date,weight_kg:weight,origin:'manual'},{onConflict:'gym_id,athlete_id,measured_on'});if(error)throw error;$('measureWeight').value='';notice('Medición guardada.');await loadMeasurements()}catch(err){notice(errorMessage(err))}
 }
 async function loadPlans(){
