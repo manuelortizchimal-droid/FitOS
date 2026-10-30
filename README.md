@@ -1,20 +1,23 @@
-# FitOS — QA pública (v0.5)
+# FitOS — QA pública v0.6
 
-Prueba de interfaz para el primer gimnasio con **tres sucursales**.
+**[Abrir la prueba](https://manuelortizchimal-droid.github.io/FitOS/)**
 
-## Abrir
-https://manuelortizchimal-droid.github.io/FitOS/
+## Dos recorridos de prueba
+1. Crear usuario ficticio y contraseña exclusiva como **Deportista**. Registrar perfil, rutina, series, mediciones y consultar historial.
+2. Cerrar sesión y crear otro usuario ficticio como **Dueño**. Consultar las tres sucursales, administrar membresías, cambiar tarifa, generar corte y descargar CSV.
 
-## Recorridos
-- **Deportista:** crear cuenta ficticia, configurar perfil, registrar y editar series, guardar medidas y ver historial.
-- **Propietario:** crear una cuenta de demostración con rol propietario, visualizar sucursales, cambiar estados de membresía, configurar tarifa y exportar corte CSV.
+## Auditoría v0.6
+- Contraseñas de la demo ya no se guardan directamente en texto claro (resumen SHA-256 únicamente para demostración, **no equivale a autenticación segura**).
+- Operaciones de guardado críticas con restauración de estado cuando falla el almacenamiento.
+- Corrección del cronómetro al navegar y control de intervalos duplicados.
+- Validación reforzada de peso, RIR, medidas, fechas y tarifa.
+- Protección de celdas CSV contra inyección de fórmulas.
+- Pruebas automatizadas ejecutadas en Chromium con documento local aislado y almacenamiento simulado: recorrido deportista, propietario, persistencia en estado, facturación, cronómetro y CSV. Comprobación de sintaxis JS.
 
-## Seguridad y limitaciones
-**Solo demostración.** Esta versión es HTML estático, sin backend ni Supabase conectado. Los datos se guardan únicamente en el navegador y se pueden manipular desde el cliente. Los roles son seleccionables para pruebas y **no son permisos seguros**. Los valores y cierres de facturación son ficticios.
+## Límites y seguridad
+**Esta es una DEMO PÚBLICA**, no una aplicación comercial. Utiliza almacenamiento exclusivo del navegador, las cuentas no se sincronizan y el rol de propietario se elige libremente para las pruebas. No introducir datos reales de personas, información de membresías reales ni contraseñas personales. El sitio no está conectado a Supabase, no tiene control de acceso de servidor y **no debe usarse para facturación real**.
 
-No utilices datos reales de deportistas, información de clientes ni contraseñas habituales. Para la demostración las contraseñas se almacenan como resúmenes SHA-256, lo cual **no representa un sistema de autenticación seguro**, ni reemplaza Supabase Auth. Las cuentas no se sincronizan entre dispositivos.
+La v0.6 utiliza un nuevo espacio de datos locales de prueba; cuentas ficticias anteriores de v0.5 no se importan automáticamente.
 
-El sitio está publicado desde un repositorio público. No alojar información corporal real ni credenciales privilegiadas aquí.
-
-## Próxima integración
-Supabase Auth, Postgres, políticas RLS y roles de servidor, migraciones versionadas, pruebas de regresión e integración, y validación de la facturación contra membresías verificadas.
+## Próximos requisitos
+Supabase Auth y PostgreSQL, permisos RLS, administrador protegido, respaldos, separación de sucursales, integración real y pruebas de carga.
