@@ -3,8 +3,10 @@ import { createClient } from 'npm:@supabase/supabase-js@2.49.10';
 const url=Deno.env.get('SUPABASE_URL')||'';
 const anon=Deno.env.get('SUPABASE_ANON_KEY')||'';
 const service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'';
-const allowed=new Set((Deno.env.get('FITOS_ALLOWED_ORIGINS')||'').split(',').map(s=>s.trim()).filter(Boolean));
-const redirect=Deno.env.get('FITOS_INVITE_REDIRECT_URL')||'';
+// The public GitHub Pages testing origin is allowed explicitly; production origins remain secret-configured.
+const trialOrigin='https://manuelortizchimal-droid.github.io';
+const allowed=new Set([trialOrigin,...(Deno.env.get('FITOS_ALLOWED_ORIGINS')||'').split(',').map(s=>s.trim()).filter(Boolean)]);
+const redirect=Deno.env.get('FITOS_INVITE_REDIRECT_URL')||'https://manuelortizchimal-droid.github.io/FitOS/app/';
 const json=(body,status,origin)=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json','vary':'Origin','access-control-allow-origin':origin,'access-control-allow-methods':'POST, OPTIONS','access-control-allow-headers':'authorization, apikey, content-type, x-client-info'}});
 Deno.serve(async req=>{
  const origin=req.headers.get('origin')||'';
