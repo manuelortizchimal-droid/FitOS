@@ -71,7 +71,7 @@ function paint(){
 }
 function paintSections(){
  const gymRole=memberships.find(m=>m.gym_id===activeGym?.id)?.role;
- const ownerOnly=!isMaster&&['owner','admin'].includes(gymRole);
+ const ownerOnly=isMaster||['owner','admin'].includes(gymRole);
  show('gymAdminTab',ownerOnly);
  show('gymAdmin',ownerOnly);
  show('athleteTabs',!ownerOnly);
@@ -89,7 +89,7 @@ function paintSections(){
  if(view==='plans')loadPlans().catch(e=>notice(errorMessage(e)));
 }
 async function loadOverview(){
- const root=(!isMaster&&['owner','admin'].includes(memberships.find(m=>m.gym_id===activeGym.id)?.role))?$('ownerManagement'):$('overview');root.replaceChildren();
+ const root=(isMaster||['owner','admin'].includes(memberships.find(m=>m.gym_id===activeGym.id)?.role))?$('ownerManagement'):$('overview');root.replaceChildren();
  const list=await request('fitos_branches','id,name',[['gym_id',activeGym.id]]);
  root.append(node('h3','Sucursales ('+list.length+')'));
  for(const branch of list){const row=node('div','','row');row.append(node('strong',branch.name));root.append(row)}
