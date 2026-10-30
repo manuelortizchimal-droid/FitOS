@@ -12,3 +12,7 @@ Este despliegue es DISTINTO de la demo pública de GitHub Pages.
 8. No activar modo comercial hasta verificar respaldos/restauración, recuperación de cuenta, observabilidad y protección contractual.
 
 El plan gratis de Pages tiene límites de dominios; confirmar requisitos de subdominios antes de ofrecerlos comercialmente.
+
+## Estado de la publicación
+
+Para publicar el Panel Maestro, ejecutar el build con las variables públicas de Supabase configuradas en el proveedor de hosting. No incluir claves secretas en el repositorio.
