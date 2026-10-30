@@ -189,7 +189,7 @@ function nextMonday(){const d=new Date();d.setHours(12,0,0,0);let delta=(8-d.get
 function planSessionDate(p,index){return futureDay(Math.floor(7*index/Math.max(1,p.sessions.length)),p.start)}
 function savedPlan(){return db.plans.find(p=>p.userId===user()?.id&&p.id===user()?.activePlanId&&!p.deleted&&Array.isArray(p.sessions)&&p.sessions.length>0&&p.sessions.length<=7)||null}
 function activePlan(){const p=savedPlan();return p&&!p.deleted&&p.start<=now()&&p.end>=now()?p:null}
-function ownWorkout(){const u=user(),quick=db.quickWorkouts[u.id],plan=activePlan();if(plan){const i=Math.min(Math.max(0,Number.isInteger(selectedDay)?selectedDay:0),plan.sessions.length-1);return {plan,session:plan.sessions[i],key:'p:'+plan.id+':'+i}}if(quick&&quick.date===now())return {session:quick.session,key:'q:'+quick.id,quick:true};return null}
+function ownWorkout(){const u=user(),quick=db.quickWorkouts[u.id],plan=activePlan();if(quick&&quick.date===now())return {session:quick.session,key:'q:'+quick.id,quick:true};if(plan){const i=Math.min(Math.max(0,Number.isInteger(selectedDay)?selectedDay:0),plan.sessions.length-1);return {plan,session:plan.sessions[i],key:'p:'+plan.id+':'+i}}return null}
 
 function planEditorHtml(plan){
  return '<div class="panel"><h3>Editar los ejercicios de mi plan</h3><p class="helper">Puedes cambiar nombres, series y descansos, agregar o quitar ejercicios. Los entrenamientos ya registrados seguirán en el historial.</p>'
