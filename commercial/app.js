@@ -18,7 +18,6 @@ function clear(id){$(id).replaceChildren()}
 async function request(table,fields='*',filters=[]){let q=db.from(table).select(fields);for(const [name,value] of filters)q=q.eq(name,value);const {data,error}=await q;if(error)throw error;return data||[]}
 async function start(){
  if(!configured()){show('configError',true);return}
- // Capture the callback type before Supabase consumes URL tokens.
  const activationCallback=/[?&#]type=(invite|recovery)(?:&|$)/.test(location.hash)||/[?&]type=(invite|recovery)(?:&|$)/.test(location.search);
  db=createClient(FITOS_CONFIG.url,FITOS_CONFIG.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
  const {data:{session}}=await db.auth.getSession();auth=session?.user||null;
@@ -31,6 +30,7 @@ async function start(){
  $('logout').onclick=async()=>{const {error}=await db.auth.signOut();if(error)return notice(errorMessage(error));auth=null;activeGym=null;await refresh()};
  $('newGym').onsubmit=createGym;
  $('addMeasure').onsubmit=addMeasurement;
+ $('saveAthleteProfile').onsubmit=saveAthleteProfile;
  for(const [tab,name] of [['tabOverview','overview'],['tabMeasurements','measurements'],['tabPlans','plans']])$(tab).onclick=()=>{view=name;paintSections()};
  await refresh();
 }
@@ -73,6 +73,9 @@ function paint(){
 }
 function paintSections(){
  const gymRole=memberships.find(m=>m.gym_id===activeGym?.id)?.role;
+ const isAthlete=gymRole==='athlete'&&!isMaster;
+ show('athleteProfile',isAthlete);
+ if(isAthlete)loadAthleteProfile().catch(e=>notice(errorMessage(e)));
  const ownerOnly=isMaster||['owner','admin'].includes(gymRole);
  show('gymAdminTab',ownerOnly);
  show('gymAdmin',ownerOnly);
@@ -136,6 +139,29 @@ async function loadMeasurements(){
  for(const r of rows.slice(0,100)){const row=node('div','','row');row.append(node('span',r.measured_on+' · '+(r.weight_kg??'—')+' kg · '+r.origin));root.append(row)}
  $('measureDate').max=localDate();$('measureDate').value=$('measureDate').max;
 }
+
+async function loadAthleteProfile(){
+ const {data,error}=await db.from('fitos_profiles').select('display_name,birth_date,height_cm').eq('id',auth.id).maybeSingle();
+ if(error)throw error;
+ $('profileName').value=data?.display_name||'';
+ $('profileBirth').value=data?.birth_date||'';
+ $('profileHeight').value=data?.height_cm??'';
+ $('profileBirth').max=localDate();
+ if(!data?.display_name) $('profileSaveStatus').textContent='Completa tu nombre para activar tu perfil.';
+ else $('profileSaveStatus').textContent='Perfil guardado.';
+}
+async function saveAthleteProfile(e){
+ e.preventDefault();const gymRole=memberships.find(m=>m.gym_id===activeGym?.id)?.role;
+ if(gymRole!=='athlete'||!activeGym||!['trial','active'].includes(activeGym.status))return notice('El perfil solo puede guardarse desde una cuenta de deportista activa.');
+ const form=$('saveAthleteProfile'),save=form.querySelector('button[type=submit]');
+ const name=$('profileName').value.trim(),born=$('profileBirth').value||null,stature=$('profileHeight').value?Number($('profileHeight').value):null;
+ if(name.length<2||name.length>120||(born&&born>localDate())||(stature!==null&&(!Number.isFinite(stature)||stature<80||stature>250)))return notice('Revisa los datos del perfil.');
+ save.disabled=true;
+ try{const {error}=await db.rpc('fitos_save_my_athlete_profile',{full_name:name,born,stature_cm:stature});if(error)throw error;
+ $('profileSaveStatus').textContent='Perfil guardado correctamente.';notice('Perfil actualizado.');
+ }catch(err){notice(errorMessage(err))}finally{save.disabled=false}
+}
+
 async function addMeasurement(e){
  e.preventDefault();if(!activeGym||!['active','trial'].includes(activeGym.status))return;
  if(isMaster||memberships.find(m=>m.gym_id===activeGym.id)?.role!=='athlete')return notice('Solo el deportista puede registrar sus propias mediciones.');
