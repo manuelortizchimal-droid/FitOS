@@ -1,24 +1,26 @@
-# FitOS — Demo de prueba v1.6
+# FitOS — Prueba v1.7
 
-**[Abrir FitOS v1.6](https://manuelortizchimal-droid.github.io/FitOS/?v=1.6)**
+**[Abrir la versión de prueba v1.7 (URL nueva)](https://manuelortizchimal-droid.github.io/FitOS/prueba-v17.html)**
 
-## Entrenamientos y experiencia
-- **Día 1 a Día 7**: se pueden generar planes de hasta 7 sesiones por semana, sin asignar lunes, martes, etc. La fecha de inicio continúa siendo configurable.
-- **Glosario** «Necesito ayuda con una palabra de la rutina :)» con RIR (repeticiones en reserva), drop sets, fatiga, tempo, fases excéntricas y concéntricas, isometrías y otros términos.
-- Botón **?** junto a cada ejercicio que abre una búsqueda externa de imágenes para consultar máquina, agarre y ejecución. Los resultados son orientativos y no están validados manualmente.
-- **FIN** termina una sesión cuando están registradas todas las series y suma la fecha al contador de días consecutivos.
-- **Oops! tuve que irme :(** permite salir anticipadamente. Tras confirmar y guardar, aparece un diálogo con una de siete frases alegres y positivas, informa cuántas series se conservaron y permite volver al inicio. No cuenta como entrenamiento finalizado ni aumenta la racha.
-- Peso en kg/lb por ejercicio, cronómetro flotante, sonido de tres tonos o vibración opcional según navegador.
+También se actualizó index.html: [abrir FitOS](https://manuelortizchimal-droid.github.io/FitOS/).
 
-## Importación
-- [Importar rutinas](https://manuelortizchimal-droid.github.io/FitOS/import.html): hasta Día 7, texto, tablas, Excel, PDF y OCR con revisión.
-- [Importar mediciones](https://manuelortizchimal-droid.github.io/FitOS/measure-import.html): texto, CSV, Excel, PDF, capturas y OCR con revisión.
+## Corrección verificada
+- Eliminadas las tarjetas iniciales de membresía, series registradas y último peso del dashboard del deportista.
+- Eliminado el bloque inferior duplicado de entrenamiento.
+- Mantenido el contador de constancia y un solo bloque de acceso a los días de entrenamiento.
+- Glosario **«Necesito ayuda con una palabra de la rutina :)»** y definición de **RIR (repeticiones en reserva)**.
+- Sesiones mostradas como **Día 1, Día 2… Día 7**, sin nombres de lunes, martes, etc.
+- Botón de imágenes de referencia (?) junto a los nombres de ejercicios.
+- Eliminadas las implementaciones obsoletas y duplicadas de pantallas de entrenamiento e historial; queda una sola versión de cada función.
+- Identificador de versión visible sobre la aplicación: **FitOS v1.7 · Interfaz actualizada**.
 
-## Verificaciones
-- Sintaxis JavaScript comprobada en `index.html`.
-- Se verificó que el registro de salida ocurre antes de mostrar el diálogo y que no crea una sesión completada ni altera la racha.
-- Se revisaron las siete frases y su tono no culpabilizante.
-- La revisión anterior del generador comprobó 4,116 combinaciones incluyendo planes de siete días, sin fallas de cobertura ni exceso de tiempo estimado.
+## Pruebas
+- Sintaxis JavaScript validada.
+- Renderizado lógico del inicio con plan: 2 sesiones, contador de constancia y sin tarjetas retiradas.
+- Existencia y unicidad de funciones activas de Entrenar e Historial comprobadas.
+- Archivo v1.7 nuevo creado y leído de nuevo en GitHub.
 
-## Pendientes y seguridad
-Solo **demo pública**, no se debe ingresar información personal ni contraseñas habituales. Persistencia en navegador sin autenticación ni roles seguros de servidor. Sin Supabase aún. Pendientes: verificación visual en móviles, pruebas funcionales integrales reales y pruebas de las bibliotecas OCR externas. GitHub Pages puede tardar en reflejar el código confirmado en la rama principal.
+**Pendiente:** comprobar la entrega real de GitHub Pages, que no es accesible desde el entorno actual, y revisar visualmente en móviles.
+
+## Advertencia
+Demo pública sin backend ni autenticación segura. Usar exclusivamente datos ficticios.
