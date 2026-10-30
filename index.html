@@ -44,14 +44,36 @@ html{overflow-x:hidden;-webkit-text-size-adjust:100%}body{overflow-x:hidden}.she
 .finish-card{width:min(390px,100%);max-height:calc(100dvh - 32px);overflow:auto;text-align:center;border-radius:20px;background:var(--panel);border:1px solid var(--line);padding:25px 20px;box-shadow:0 20px 55px #0004}
 .finish-quote{font-size:18px;line-height:1.45;font-weight:650;overflow-wrap:break-word}.finish-card button{width:100%;margin-top:10px}
 @media(max-width:370px){.rest-bubble{right:8px;bottom:75px}.rest-controls button{font-size:11px}.finish-quote{font-size:16px}}
+
+/* FitOS v1.1 streamlined, touch-friendly clock */
+.rest-bubble{width:min(270px,calc(100vw - 20px));padding:16px;border-radius:22px;box-shadow:0 15px 45px rgba(0,0,0,.18)}
+.rest-drag{font-size:14px;font-weight:750;padding-bottom:8px;letter-spacing:-.01em}
+.rest-drag .rest-min{background:transparent;color:inherit;font-size:26px;border:0;padding:0 8px;line-height:1;min-height:36px}
+.rest-display{font-size:clamp(38px,10vw,49px);font-weight:750;letter-spacing:-.05em;line-height:1.25}
+.rest-bubble.rest-done .rest-display{color:#d72c29!important}
+.rest-bubble.rest-done #restCaption{color:#d72c29;font-weight:750}
+.rest-presets{margin:14px 0 10px;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.rest-presets button{border-radius:12px;background:var(--panel2,#f0eee8);color:inherit;font-size:12px;padding:10px 2px;border:1px solid var(--line);min-height:42px}
+.rest-presets button.selected{background:var(--a);color:#fff;border-color:var(--a)}
+.rest-controls{grid-template-columns:1fr 1fr;gap:8px}
+.rest-controls button{border-radius:14px;font-size:14px;padding:12px 6px;min-height:46px}
+.rest-alert{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:13px}
+.rest-alert label{font-size:12px;line-height:1.3;margin:0;flex:1}
+.rest-alert select{font-size:12px;min-height:39px;width:115px;max-width:50%;padding:5px 7px}
+.rest-note{font-size:11px;line-height:1.35;margin:6px 0 0;opacity:.75}
+.rir-help{margin:7px 0 10px;font-size:13px}.rir-help summary{cursor:pointer;font-weight:650;color:var(--a);padding:3px 0}
+.workout-units{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px}.workout-units label{margin:0}.workout-units select{width:auto;min-width:135px}
+@media(max-width:370px){.rest-bubble{padding:12px}.rest-presets button{font-size:11px}.rest-alert select{width:108px}}
 </style></head><body><div class="banner">DEMO PÚBLICA · Solo datos ficticios. No uses contraseñas habituales ni datos personales. Sin autenticación ni permisos de servidor.</div><main id="root" class="shell"></main>
 <button id="restLauncher" type="button" aria-label="Abrir cronómetro de descanso" title="Abrir cronómetro">⏱ <span id="restBadge">0 s</span></button>
-<section id="restBubble" class="rest-bubble" hidden aria-label="Cronómetro flotante de descanso">
- <div id="restDrag" class="rest-drag" aria-label="Arrastrar cronómetro">⠿ Mover <button id="restMin" type="button" aria-label="Minimizar cronómetro">−</button></div>
+<section id="restBubble" class="rest-bubble" hidden aria-label="Cronómetro de descanso">
+ <div id="restDrag" class="rest-drag"><span>Descanso</span><button id="restMin" type="button" class="rest-min" aria-label="Minimizar cronómetro">⌄</button></div>
  <div class="rest-display" id="restDisplay" role="timer">0 s</div>
- <p id="restCaption">Descanso sugerido: 90 segundos</p>
- <div class="rest-controls"><button id="restPlay" type="button">Iniciar</button><button id="restStop" type="button" class="secondary">Detener</button><button id="restReset" type="button" class="secondary">A cero</button></div>
- <div class="rest-presets" aria-label="Ajustar descanso"><button type="button" data-seconds="60">60 s</button><button type="button" data-seconds="90">90 s</button><button type="button" data-seconds="120">120 s</button><button type="button" data-seconds="180">180 s</button></div>
+ <p id="restCaption">Objetivo: 60 segundos</p>
+ <div class="rest-presets" aria-label="Duración del descanso"><button type="button" data-seconds="60">60 s</button><button type="button" data-seconds="90">90 s</button><button type="button" data-seconds="120">120 s</button><button type="button" data-seconds="180">180 s</button></div>
+ <div class="rest-controls"><button id="restPlay" type="button">Iniciar</button><button id="restReset" type="button" class="secondary">Reiniciar</button></div>
+ <div class="rest-alert"><label for="restAlertMode">Avisarme al terminar</label><select id="restAlertMode" aria-label="Aviso al terminar descanso"><option value="off">Sin aviso</option><option value="sound">Sonido</option><option value="vibrate">Vibración</option></select></div>
+ <p class="rest-note" id="restAlertNote" aria-live="polite"></p>
 </section>
 <script>
 'use strict';
@@ -187,26 +209,43 @@ function training(){const u=user(),w=ownWorkout();if(!w)return `<h1>Entrenamient
 function history(){const list=db.sets.filter(x=>x.userId===user().id).sort((a,b)=>b.date.localeCompare(a.date));return `<h1>Historial de entrenamiento</h1><div class="panel tablewrap"><table><thead><tr><th>Fecha</th><th>Ejercicio</th><th>Serie</th><th>Kg</th><th>Reps</th><th>RIR</th></tr></thead><tbody>${list.map(s=>`<tr><td>${s.date}</td><td>${escapeHTML(s.exerciseName||DAYS[s.day]?.ex[s.exercise]?.[0]||'—')}</td><td>${s.number}</td><td>${s.kg}</td><td>${s.reps}</td><td>${s.rir}</td></tr>`).join('')||'<tr><td colspan="6">Sin registros</td></tr>'}</tbody></table></div>`}
 
 
-let restElapsedMs=0,restStartedAt=0,restRunning=false,restSuggestedSeconds=90,restInterval=null;
+
+let restElapsedMs=0,restStartedAt=0,restRunning=false,restSuggestedSeconds=60,restInterval=null,restNotified=false,restAudio=null;
 function restElapsed(){return restElapsedMs+(restRunning?Math.max(0,Date.now()-restStartedAt):0)}
-function restPaint(){const seconds=Math.floor(restElapsed()/1000);const display=$('#restDisplay'),badge=$('#restBadge'),caption=$('#restCaption'),play=$('#restPlay'),bubble=$('#restBubble');if(display)display.textContent=seconds+' s';if(badge)badge.textContent=seconds+' s';if(caption)caption.textContent='Descanso sugerido: '+restSuggestedSeconds+' segundos'+(seconds>=restSuggestedSeconds?' · Objetivo alcanzado':'');if(play)play.textContent=restRunning?'Pausar':'Iniciar';if(bubble)bubble.classList.toggle('rest-done',seconds>=restSuggestedSeconds)}
-function restShow(){const bubble=$('#restBubble');bubble.hidden=false;$('#restLauncher').hidden=true;restPaint()}
+function audioUnlock(){if(!restAudio){const AudioClass=window.AudioContext||window.webkitAudioContext;if(AudioClass)restAudio=new AudioClass()}if(restAudio?.state==='suspended')restAudio.resume().catch(()=>{})}
+function playRestSound(){if(!restAudio||restAudio.state!=='running')return;try{const time=restAudio.currentTime;for(let n=0;n<2;n++){const oscillator=restAudio.createOscillator(),gain=restAudio.createGain(),at=time+n*.21;oscillator.type='sine';oscillator.frequency.setValueAtTime(n?740:660,at);gain.gain.setValueAtTime(0.0001,at);gain.gain.exponentialRampToValueAtTime(.13,at+.015);gain.gain.exponentialRampToValueAtTime(.0001,at+.16);oscillator.connect(gain).connect(restAudio.destination);oscillator.start(at);oscillator.stop(at+.18)}}catch(e){console.warn('No se pudo emitir el sonido de descanso',e)}}
+function restNotify(){const mode=$('#restAlertMode')?.value||'off';if(mode==='sound')playRestSound();else if(mode==='vibrate'&&typeof navigator.vibrate==='function')navigator.vibrate([180,90,180])}
+function restPaint(){
+ const seconds=Math.floor(restElapsed()/1000),over=seconds>=restSuggestedSeconds;
+ const display=$('#restDisplay'),badge=$('#restBadge'),caption=$('#restCaption'),play=$('#restPlay'),bubble=$('#restBubble');
+ if(display)display.textContent=seconds+' s';if(badge)badge.textContent=seconds+' s';
+ if(caption)caption.textContent=over?'Descanso cumplido · '+(seconds-restSuggestedSeconds)+' s extra':'Objetivo: '+restSuggestedSeconds+' segundos';
+ if(play)play.textContent=restRunning?'Pausar':'Iniciar';
+ if(bubble)bubble.classList.toggle('rest-done',over);
+ document.querySelectorAll('[data-seconds]').forEach(button=>{button.classList.toggle('selected',Number(button.dataset.seconds)===restSuggestedSeconds);button.setAttribute('aria-pressed',String(Number(button.dataset.seconds)===restSuggestedSeconds))});
+ if(restRunning&&over&&!restNotified){restNotified=true;restNotify()}
+}
+function restShow(){$('#restBubble').hidden=false;$('#restLauncher').hidden=true;restPaint()}
 function restPause(){if(restRunning){restElapsedMs=restElapsed();restStartedAt=0;restRunning=false}restPaint()}
-function restPlay(){if(restRunning){restPause();return}restStartedAt=Date.now();restRunning=true;restPaint()}
-function restStart(seconds){if(!Number.isFinite(seconds)||seconds<1||seconds>3600)return;restSuggestedSeconds=seconds;restElapsedMs=0;restStartedAt=Date.now();restRunning=true;restShow()}
-function restStop(){restPause();restElapsedMs=0;restPaint()}
-function restZero(){restElapsedMs=0;if(restRunning)restStartedAt=Date.now();restPaint()}
+function restPlay(){if(restRunning){restPause();return}if($('#restAlertMode')?.value==='sound')audioUnlock();restStartedAt=Date.now();restRunning=true;restPaint()}
+function restStart(seconds){if(!Number.isFinite(seconds)||seconds<1||seconds>3600)return;restSuggestedSeconds=seconds;restElapsedMs=0;restStartedAt=Date.now();restRunning=true;restNotified=false;if($('#restAlertMode')?.value==='sound')audioUnlock();restShow()}
+function restReset(){restRunning=false;restStartedAt=0;restElapsedMs=0;restNotified=false;restPaint()}
 function restSetup(){
  $('#restLauncher').onclick=restShow;
  $('#restMin').onclick=()=>{$('#restBubble').hidden=true;$('#restLauncher').hidden=false;restPaint()};
- $('#restPlay').onclick=restPlay;$('#restStop').onclick=restStop;$('#restReset').onclick=restZero;
- document.querySelectorAll('[data-seconds]').forEach(btn=>btn.onclick=()=>{restSuggestedSeconds=Number(btn.dataset.seconds);restPaint()});
+ $('#restPlay').onclick=restPlay;$('#restReset').onclick=restReset;
+ document.querySelectorAll('[data-seconds]').forEach(button=>button.onclick=()=>{restSuggestedSeconds=Number(button.dataset.seconds);restNotified=restElapsed()/1000>=restSuggestedSeconds;if($('#restAlertMode')?.value==='sound')audioUnlock();restPaint()});
+ const alertSelect=$('#restAlertMode'),notice=$('#restAlertNote');const supported=typeof navigator.vibrate==='function';
+ if(!supported){const vibration=alertSelect.querySelector('option[value="vibrate"]');vibration.disabled=true;vibration.textContent='Vibración no disponible'}
+ const note=()=>{notice.textContent=alertSelect.value==='sound'?'El sonido requiere que la página permanezca activa y el teléfono permita reproducirlo.':alertSelect.value==='vibrate'?'Solo funciona en dispositivos compatibles y con la aplicación activa.':'Sin notificaciones; el cronómetro seguirá marcando el tiempo.'};
+ alertSelect.value='off';alertSelect.onchange=()=>{if(alertSelect.value==='sound')audioUnlock();note()};note();
  const drag=$('#restDrag'),bubble=$('#restBubble');let initial=null;
  drag.addEventListener('pointerdown',ev=>{if(ev.target.closest('button'))return;const rect=bubble.getBoundingClientRect();initial={x:ev.clientX,y:ev.clientY,left:rect.left,top:rect.top};drag.setPointerCapture(ev.pointerId)});
  drag.addEventListener('pointermove',ev=>{if(!initial)return;const left=Math.min(Math.max(0,initial.left+ev.clientX-initial.x),Math.max(0,innerWidth-bubble.offsetWidth));const top=Math.min(Math.max(0,initial.top+ev.clientY-initial.y),Math.max(0,innerHeight-bubble.offsetHeight));bubble.style.left=left+'px';bubble.style.top=top+'px';bubble.style.right='auto';bubble.style.bottom='auto'});
  for(const event of ['pointerup','pointercancel','lostpointercapture'])drag.addEventListener(event,()=>initial=null);
- if(restInterval)clearInterval(restInterval);restInterval=setInterval(restPaint,500);restPaint()
+ if(restInterval)clearInterval(restInterval);restInterval=setInterval(restPaint,350);restPaint()
 }
+
 restSetup();
 
 if(!persist())console.warn('FitOS demo: browser storage unavailable');render();
