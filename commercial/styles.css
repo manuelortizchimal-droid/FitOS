@@ -32,3 +32,5 @@
 .client-dialog .profile-detail{margin:7px 0;overflow-wrap:anywhere}.client-dialog .metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .client-card .actions button{min-width:88px}.report-dialog{max-width:calc(100vw - 20px)}
 @media(max-width:650px){.client-dialog .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.report-dialog{padding:15px}.client-card .actions button{flex:1}}
+
+.variation-toggle{margin-top:8px}.variation-options{border:1px solid #dbe3e4;border-radius:12px;padding:12px;margin:8px 0;background:#f8faf9}.variation-options select{max-width:100%;width:100%;overflow-wrap:anywhere}.variation-options button{max-width:100%;white-space:normal}.variation-options[hidden]{display:none!important}

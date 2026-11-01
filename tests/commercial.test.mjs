@@ -162,3 +162,16 @@ test('Invitation email template renders a tokenized short call to action',()=>{
  assert.ok(src.includes('href="{{ .ConfirmationURL }}"'));
  assert.ok(!src.includes('localhost'));
 });
+
+test('Workout substitutions retain original plan and stable set keys',()=>{
+ const ui=read('commercial/training.js');
+ const sql=read('supabase/migrations/0014_exercise_equipment_variations.sql');
+ for(const marker of ['Cambiar ejercicio','fitos_workout_variations','fitos_exercise_alternatives','muscle_group:muscle.value','Cambio'])if(marker!=='Cambio')assert.ok(ui.includes(marker),marker);
+ assert.ok(ui.includes('savedCount>0'));
+ assert.ok(ui.includes("onConflict:'workout_id,exercise_key'"));
+ assert.ok(sql.includes('Alternative must target the same muscle group'));
+ assert.ok(sql.includes('Change the exercise before saving any sets'));
+ assert.ok(sql.includes("w.athlete_id=auth.uid()"));
+ assert.ok(sql.includes("as restrictive"));
+ assert.ok(!ui.includes('.innerHTML'));
+});

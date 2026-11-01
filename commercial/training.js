@@ -20,6 +20,9 @@ export async function renderTraining({db,gym,auth,role,root,notify}){
   const days=field('Entrenamientos por semana (1–7)','number',{min:1,max:7,value:3,required:true});
   const exercise=field('Ejercicio principal por día','text',{required:true,maxLength:120});
   const count=field('Series por ejercicio','number',{min:1,max:10,value:3,required:true});
+  const muscle=el('select');muscle.required=true;
+  for(const [key,label] of [['chest','Pecho'],['back','Espalda'],['shoulders','Hombros'],['biceps','Bíceps'],['triceps','Tríceps'],['quads','Cuádriceps'],['hamstrings','Femoral'],['glutes','Glúteos'],['calves','Pantorrillas'],['core','Abdomen']]){const option=el('option',label);option.value=key;muscle.append(option)}
+  const muscleLabel=el('label','Músculo principal del ejercicio');muscleLabel.append(muscle);
   const start=field('Inicio del plan','date',{required:true,value:localDate()});
   const athlete=el('select');
   if(admin){
@@ -27,7 +30,9 @@ export async function renderTraining({db,gym,auth,role,root,notify}){
    for(const id of athleteIds){const o=el('option',id.slice(0,8)+'…');o.value=id;athlete.append(o)}
    label.append(athlete);form.append(label);
   }
-  for(const f of [title,days,exercise,count,start])form.append(f.lab);
+  for(const f of [title,days,exercise])form.append(f.lab);
+  form.append(muscleLabel);
+  for(const f of [count,start])form.append(f.lab);
   const submit=el('button','Guardar rutina');submit.type='submit';form.append(submit);
   if(admin&&!athleteIds.length){submit.disabled=true;form.append(el('p','Primero invita a un deportista a este gimnasio.'))}
   form.onsubmit=async ev=>{
@@ -42,7 +47,7 @@ export async function renderTraining({db,gym,auth,role,root,notify}){
     const end=until.toISOString().slice(0,10);
     const created=await db.from('fitos_plans').insert({gym_id:gym.id,athlete_id:target,title:title.input.value.trim(),starts_on:from,ends_on:end,created_by:auth.id}).select('id').single();
     if(created.error)throw created.error;
-    const rows=Array.from({length:frequency},(_,i)=>({gym_id:gym.id,plan_id:created.data.id,day_index:i,title:'Día '+(i+1)+' · '+exercise.input.value.trim(),exercises:[{id:crypto.randomUUID(),name:exercise.input.value.trim(),sets,reps:'8–12',rir:2,rest:90}]}));
+    const rows=Array.from({length:frequency},(_,i)=>({gym_id:gym.id,plan_id:created.data.id,day_index:i,title:'Día '+(i+1)+' · '+exercise.input.value.trim(),exercises:[{id:crypto.randomUUID(),name:exercise.input.value.trim(),muscle_group:muscle.value,sets,reps:'8–12',rir:2,rest:90}]}));
     const saved=await db.from('fitos_plan_days').insert(rows);
     if(saved.error){await db.from('fitos_plans').update({active:false}).eq('id',created.data.id).eq('gym_id',gym.id);throw Error('Plan creado, pero no se guardaron sus días. Se desactivó para evitar una rutina incompleta.')}
     notify('Rutina guardada y disponible.');await renderTraining({db,gym,auth,role,root,notify});
@@ -88,11 +93,48 @@ async function openWorkout({db,gym,auth,plan,day,root,role,notify}){
    const result=await db.from('fitos_sets').select('exercise_key,set_number,weight_kg,reps,rir').eq('gym_id',gym.id).eq('workout_id',workout.id);
    if(result.error)throw result.error;
    const saved=result.data||[];
+   const variationsResult=await db.from('fitos_workout_variations').select('exercise_key,alternative_id').eq('gym_id',gym.id).eq('workout_id',workout.id);
+   if(variationsResult.error)throw variationsResult.error;
+   const chosen=new Map((variationsResult.data||[]).map(v=>[v.exercise_key,v.alternative_id]));
+   const catalogResult=await db.from('fitos_exercise_alternatives').select('id,muscle_group,equipment,name,technique').order('equipment').order('name');
+   if(catalogResult.error)throw catalogResult.error;
+   const catalog=catalogResult.data||[];
    const exercises=Array.isArray(day.exercises)?day.exercises:[];
    let required=0;
    for(const [eIndex,ex] of exercises.entries()){
     const id=String(ex.id||eIndex);const sets=Math.min(10,Math.max(1,Number(ex.sets)||1));required+=sets;
-    const card=el('section');card.className='panel';card.append(el('h4',ex.name||'Ejercicio'));
+    const card=el('section');card.className='panel';
+    const selected=catalog.find(a=>a.id===chosen.get(id));
+    card.append(el('h4',selected?.name||ex.name||'Ejercicio'));
+    if(selected)card.append(el('p','Variante de '+String(ex.name||'ejercicio')+' · '+selected.equipment),'small');
+    const options=catalog.filter(a=>a.muscle_group===ex.muscle_group&&a.id!==selected?.id);
+    const savedCount=saved.filter(x=>x.exercise_key===id).length;
+    const change=el('button','Cambiar ejercicio');change.type='button';change.className='outline variation-toggle';
+    change.disabled=savedCount>0||!ex.muscle_group||options.length===0;
+    if(savedCount>0)change.title='Para preservar el historial, cambia el ejercicio antes de guardar las series.';
+    else if(!ex.muscle_group)change.title='La rutina debe indicar el músculo principal para ofrecer variaciones seguras.';
+    const container=el('div');container.hidden=true;container.className='variation-options';
+    const explain=el('p','Alternativas para el mismo músculo. Selecciona según el equipamiento disponible, tu técnica y comodidad articular. No copies automáticamente el peso del ejercicio original.');
+    explain.className='small';container.append(explain);
+    const chooser=el('select');chooser.setAttribute('aria-label','Alternativa del ejercicio '+String(ex.name||''));
+    for(const alt of options){const o=el('option',alt.name+' · '+alt.equipment);o.value=alt.id;chooser.append(o)}
+    const desc=el('p','');desc.className='small';
+    const updateDescription=()=>{const selectedOption=options.find(a=>a.id===chooser.value);desc.textContent=selectedOption?.technique||''};
+    chooser.onchange=updateDescription;updateDescription();
+    const saveVariation=el('button','Utilizar esta variante');saveVariation.type='button';
+    saveVariation.onclick=async()=>{saveVariation.disabled=true;try{
+      const {error}=await db.from('fitos_workout_variations').upsert({
+        gym_id:gym.id,workout_id:workout.id,exercise_key:id,alternative_id:chooser.value
+      },{onConflict:'workout_id,exercise_key'});
+      if(error)throw error;
+      notify('Ejercicio sustituido solo para esta sesión. La rutina original no se modificó.');
+      await paint();
+    }catch(err){message(notify,err);saveVariation.disabled=false}};
+    container.append(chooser,desc,saveVariation);
+    change.onclick=()=>{container.hidden=!container.hidden};
+    card.append(change,container);
+    if(savedCount>0)card.append(el('p','Variante bloqueada: ya se registraron series de este ejercicio.','small'));
+    else if(!ex.muscle_group)card.append(el('p','Este ejercicio no tiene músculo identificado. El entrenador debe crear una rutina con el grupo muscular definido.','small'));
     const head=el('p','Serie | Peso (kg) | Reps | RIR');head.className='small';card.append(head);
     for(let n=1;n<=sets;n++){
      const prior=saved.find(x=>x.exercise_key===id&&x.set_number===n);
