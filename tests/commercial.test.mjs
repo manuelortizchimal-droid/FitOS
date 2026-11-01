@@ -131,7 +131,7 @@ test('Main Dashboard, tenant management and account recovery boundaries',()=>{
 test('Commercial and Pages DOM contain every live dashboard element',()=>{
  for(const file of ['commercial/index.html','app/index.html']){
   const html=read(file);
-  for(const id of ['master','masterGyms','masterSettings','newGym','gymHome','gymAdminTab','gymAdmin','ownerManagement','athleteTabs','tabOverview','tabPlans','tabMeasurements','overview','measurements','plans','status','auth','workspace']) assert.ok(html.includes('id="'+id+'"'),file+': '+id);
+  for(const id of ['master','masterGyms','masterSettings','newGym','gymHome','gymAdminTab','gymAdmin','ownerManagement','athleteTabs','athleteMenu','athleteHome','athleteProfile','navHome','navTraining','navMeasurements','navProfile','overview','measurements','plans','status','auth','workspace']) assert.ok(html.includes('id="'+id+'"'),file+': '+id);
   assert.ok(html.includes('Main Dashboard'),file+' missing dashboard label');
  }
 });
@@ -174,4 +174,20 @@ test('Workout substitutions retain original plan and stable set keys',()=>{
  assert.ok(sql.includes("w.athlete_id=auth.uid()"));
  assert.ok(sql.includes("as restrictive"));
  assert.ok(!ui.includes('.innerHTML'));
+});
+
+test('Athlete onboarding requires only a name, saves optional sex, and routes to Inicio',()=>{
+ const html=read('athlete/index.html'),app=read('commercial/app.js');
+ for(const id of ['profileSex','profileName','navHome','navTraining','navMeasurements','navProfile','athleteHome'])assert.ok(html.includes('id="'+id+'"'),id);
+ for(const value of ['value="M"','value="F"','value="No binario"','value=""'])assert.ok(html.includes(value),value);
+ assert.ok(html.includes('id="profileName" type="text" required'));
+ assert.ok(!html.includes('id="profileSex" required'));
+ assert.ok(!html.includes('id="tabOverview"'));
+ assert.ok(!html.includes('id="tabPlans"'));
+ assert.ok(!html.includes('id="tabMeasurements"'));
+ assert.ok(app.includes("athleteReady=true;view='home'"));
+ assert.ok(app.includes("show('athleteMenu',accessible)"));
+ assert.ok(app.includes("sex_value:sex"));
+ const sql=read('supabase/migrations/0015_athlete_sex_optional.sql');
+ for(const fragment of ["'M','F','No binario'",'sex_value text','No active athlete membership'])assert.ok(sql.includes(fragment),fragment);
 });

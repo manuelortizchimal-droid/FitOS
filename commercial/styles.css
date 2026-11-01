@@ -34,3 +34,13 @@
 @media(max-width:650px){.client-dialog .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.report-dialog{padding:15px}.client-card .actions button{flex:1}}
 
 .variation-toggle{margin-top:8px}.variation-options{border:1px solid #dbe3e4;border-radius:12px;padding:12px;margin:8px 0;background:#f8faf9}.variation-options select{max-width:100%;width:100%;overflow-wrap:anywhere}.variation-options button{max-width:100%;white-space:normal}.variation-options[hidden]{display:none!important}
+
+/* Deportista: registro sencillo, navegación móvil y menú principal. */
+.athlete-menu{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 15px}
+.athlete-menu button{flex:1;min-width:100px;margin:0;padding:11px 12px}
+.athlete-home{padding:18px;background:#f8fafb;border:1px solid #dfe5e6;border-radius:14px;margin-top:8px}
+.athlete-home h3{margin:0 0 8px}
+.athlete-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:16px}
+.athlete-quick-actions button{margin:0;white-space:normal}
+.profile-form select{width:100%;max-width:100%;margin-top:5px}
+@media(max-width:500px){.athlete-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.athlete-menu button{min-width:0}.athlete-quick-actions{grid-template-columns:1fr}.athlete-profile{padding:12px}}

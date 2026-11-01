@@ -29,12 +29,39 @@
 <section id="gymHome" class="panel" hidden>
 <div class="heading"><h2 id="gymTitle">Gimnasio</h2><span id="gymRole" class="tag"></span></div>
 <div id="gymAdminTab" hidden><div id="gymAdmin"></div><div id="ownerManagement"></div></div>
-<div id="athleteTabs"><section id="athleteProfile" class="athlete-profile"><h3>Mi perfil</h3><p class="small">Completa tus datos para comenzar. Puedes editarlos cuando lo necesites.</p><form id="saveAthleteProfile" class="profile-form"><label for="profileName">Nombre completo<input id="profileName" type="text" required maxlength="120" autocomplete="name" placeholder="Nombre y apellidos"></label><label for="profileBirth">Fecha de nacimiento (opcional)<input id="profileBirth" type="date"></label><label for="profileHeight">Estatura en centímetros (opcional)<input id="profileHeight" type="number" min="80" max="250" step="0.1" inputmode="decimal"></label><button type="submit">Guardar mi perfil</button></form><p id="profileSaveStatus" role="status" aria-live="polite"></p></section>
- <div class="actions"><button id="tabOverview" class="outline" type="button">General</button><button id="tabMeasurements" class="outline" type="button">Medidas</button><button id="tabPlans" class="outline" type="button">Rutinas</button></div>
- <div id="overview"></div>
- <div id="measurements" hidden><h3>Historial corporal</h3><form id="addMeasure" class="inline-form"><label>Fecha <input id="measureDate" type="date" required></label><label>Peso (kg) <input id="measureWeight" type="number" min="20" max="400" step=".01" required></label><button type="submit">Guardar medición</button></form><div id="measurementRows"></div></div>
- <div id="plans" hidden><h3>Rutinas del gimnasio</h3><div id="planRows"></div></div>
-</div>
+<div id="athleteTabs" hidden>
+  <section id="athleteProfile" class="athlete-profile" hidden>
+   <h3 id="profileHeading">Completa tu perfil</h3>
+   <p id="profileInstructions" class="small">Solo tu nombre es obligatorio. Puedes agregar el resto de los datos después.</p>
+   <form id="saveAthleteProfile" class="profile-form">
+    <label for="profileName">Nombre completo *<input id="profileName" type="text" required minlength="2" maxlength="120" autocomplete="name" placeholder="Tu nombre y apellidos"></label>
+    <label for="profileSex">Sexo (opcional)<select id="profileSex"><option value="">Prefiero no indicarlo</option><option value="M">M</option><option value="F">F</option><option value="No binario">No binario</option></select></label>
+    <label for="profileBirth">Fecha de nacimiento (opcional)<input id="profileBirth" type="date"></label>
+    <label for="profileHeight">Estatura en centímetros (opcional)<input id="profileHeight" type="number" min="80" max="250" step="0.1" inputmode="decimal"></label>
+    <button type="submit">Guardar mi perfil</button>
+   </form>
+   <p id="profileSaveStatus" role="status" aria-live="polite"></p>
+  </section>
+  <nav id="athleteMenu" class="athlete-menu" aria-label="Navegación del deportista" hidden>
+   <button id="navHome" type="button">Inicio</button>
+   <button id="navTraining" type="button" class="outline">Entrenar</button>
+   <button id="navMeasurements" type="button" class="outline">Medidas</button>
+   <button id="navProfile" type="button" class="outline">Mi perfil</button>
+  </nav>
+  <section id="athleteHome" class="athlete-home" hidden>
+   <h3 id="athleteWelcome">Tu espacio de entrenamiento</h3>
+   <p class="small">Consulta tu entrenamiento y tus mediciones. Puedes actualizar tus datos desde Mi perfil.</p>
+   <div class="athlete-quick-actions">
+    <button type="button" id="goTraining">Comenzar entrenamiento</button>
+    <button type="button" id="goMeasurements" class="outline">Ver mi progreso corporal</button>
+   </div>
+  </section>
+  <div id="overview" hidden></div>
+  <section id="measurements" hidden><h3>Historial corporal</h3>
+   <form id="addMeasure" class="inline-form"><label>Fecha <input id="measureDate" type="date" required></label><label>Peso (kg) <input id="measureWeight" type="number" min="20" max="400" step=".01" required></label><button type="submit">Guardar medición</button></form><div id="measurementRows"></div>
+  </section>
+  <section id="plans" hidden><h3>Mi entrenamiento</h3><div id="planRows"></div></section>
+ </div>
 </section>
 </div>
 </section>

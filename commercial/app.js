@@ -5,7 +5,7 @@ import { renderMainDashboard,renderGymAdministration } from './administration.js
 
 const $=id=>document.getElementById(id), show=(id,on)=>$(id).hidden=!on;
 const safeText=(node,value)=>{node.textContent=String(value??'')};
-let db=null,auth=null,gyms=[],activeGym=null,memberships=[],isMaster=false,view='overview',recoveryMode=false,gymModules=[];
+let db=null,auth=null,gyms=[],activeGym=null,memberships=[],isMaster=false,view='home',recoveryMode=false,gymModules=[],athleteReady=false,profileFetchId=0;
 function notice(message){safeText($('status'),message)}
 function localDate(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
 function errorMessage(err){return err?.message?.slice(0,240)||'Error de conexión. Intenta de nuevo.'}
@@ -27,11 +27,13 @@ async function start(){
  $('setPassword').onsubmit=async ev=>{ev.preventDefault();const input=$('newPassword');if(input.value.length<12)return notice('La contraseña debe tener al menos 12 caracteres.');const {error}=await db.auth.updateUser({password:input.value});if(error)return notice(errorMessage(error));input.value='';recoveryMode=false;show('passwordSetup',false);history.replaceState(null,'',location.pathname);notice('Contraseña establecida.');await refresh()};
  $('forgotPassword').onclick=async()=>{const email=$('email').value.trim();if(!email)return notice('Escribe primero tu correo electrónico.');const b=$('forgotPassword');b.disabled=true;try{const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:authCallbackURL});if(error){const limited=error.status===429||error.code==='over_email_send_rate_limit';notice(limited?'Límite temporal de correos alcanzado. Intenta más tarde; no repitas solicitudes seguidas.':'No se pudo solicitar recuperación. '+errorMessage(error));return}notice('Si la cuenta existe y no hay restricciones de envío, recibirás instrucciones por correo.')}catch(err){notice(errorMessage(err))}finally{b.disabled=false}};
  $('login').onsubmit=async ev=>{ev.preventDefault();$('submitLogin').disabled=true;try{const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;auth=(await db.auth.getUser()).data.user;await refresh()}catch(e){notice(errorMessage(e))}finally{$('submitLogin').disabled=false}};
- $('logout').onclick=async()=>{const {error}=await db.auth.signOut();if(error)return notice(errorMessage(error));auth=null;activeGym=null;await refresh()};
+ $('logout').onclick=async()=>{const {error}=await db.auth.signOut();if(error)return notice(errorMessage(error));auth=null;activeGym=null;athleteReady=false;await refresh()};
  $('newGym').onsubmit=createGym;
  $('addMeasure').onsubmit=addMeasurement;
  $('saveAthleteProfile').onsubmit=saveAthleteProfile;
- for(const [tab,name] of [['tabOverview','overview'],['tabMeasurements','measurements'],['tabPlans','plans']])$(tab).onclick=()=>{view=name;paintSections()};
+ for(const [id,target] of [['navHome','home'],['navTraining','plans'],['navMeasurements','measurements'],['navProfile','profile'],['goTraining','plans'],['goMeasurements','measurements']]){
+  $(id).onclick=()=>{view=target;renderAthleteView()};
+ }
  await refresh();
 }
 async function refresh(){
@@ -76,23 +78,14 @@ function paintSections(){
  const gymRole=memberships.find(m=>m.gym_id===activeGym?.id)?.role;
  const isAthlete=gymRole==='athlete'&&!isMaster;
  show('athleteProfile',isAthlete);
- if(isAthlete)loadAthleteProfile().catch(e=>notice(errorMessage(e)));
+ if(isAthlete){athleteReady=false;show('athleteMenu',false);show('athleteHome',false);show('athleteProfile',false);loadAthleteProfile().catch(e=>notice(errorMessage(e)))}
  const ownerOnly=isMaster||['owner','admin'].includes(gymRole);
  show('gymAdminTab',ownerOnly);
  show('gymAdmin',ownerOnly);
  show('athleteTabs',!ownerOnly);
  if(ownerOnly){renderGymAdministration({db,g:activeGym,root:$('gymAdmin'),notify:notice,resetAccount:async(member)=>{if(!confirm('¿Enviar un correo para restablecer la contraseña de este deportista? Su información permanecerá intacta.'))return;try{const {data,error}=await db.functions.invoke('fitos-reset-member',{body:{gym_id:activeGym.id,user_id:member}});if(error)throw error;if(!data?.ok)throw Error(data?.error||'No se pudo solicitar el correo.');notice('Solicitud enviada. La entrega está sujeta al límite de correos de Supabase.')}catch(e){notice(errorMessage(e))}}}).catch(e=>notice(errorMessage(e)));loadOverview().catch(e=>notice(errorMessage(e)));return}
- const measureEnabled=isMaster||gymModules.find(m=>m.gym_id===activeGym?.id&&m.module_key==='measurements')?.enabled===true;
- const trainEnabled=isMaster||gymModules.find(m=>m.gym_id===activeGym?.id&&m.module_key==='training')?.enabled===true;
- show('tabMeasurements',measureEnabled);show('tabPlans',trainEnabled);
- if((view==='measurements'&&!measureEnabled)||(view==='plans'&&!trainEnabled))view='overview';
- for(const name of ['overview','measurements','plans'])show(name,view===name);
- if(!activeGym)return;
- if(!['active','trial'].includes(activeGym.status)){for(const name of ['overview','measurementRows','planRows'])clear(name);$('addMeasure').hidden=true;return}
- $('addMeasure').hidden=isMaster||gymRole!=='athlete';
- if(view==='overview')loadOverview().catch(e=>notice(errorMessage(e)));
- if(view==='measurements')loadMeasurements().catch(e=>notice(errorMessage(e)));
- if(view==='plans')loadPlans().catch(e=>notice(errorMessage(e)));
+ renderAthleteView();
+
 }
 async function loadOverview(){
  const root=(isMaster||['owner','admin'].includes(memberships.find(m=>m.gym_id===activeGym.id)?.role))?$('ownerManagement'):$('overview');root.replaceChildren();
@@ -141,28 +134,80 @@ async function loadMeasurements(){
  $('measureDate').max=localDate();$('measureDate').value=$('measureDate').max;
 }
 
+function renderAthleteView(){
+ if(!activeGym||isMaster)return;
+ const role=memberships.find(m=>m.gym_id===activeGym.id)?.role;
+ if(role==='owner'||role==='admin')return;
+ const isAthlete=role==='athlete';
+ const isTrainer=role==='trainer';
+ if(isTrainer&&view==='home')view='plans';
+ const enabled=['active','trial'].includes(activeGym.status);
+ const accessible=(isAthlete&&athleteReady||isTrainer)&&enabled;
+ show('athleteTabs',true);
+ show('athleteMenu',accessible);
+ show('navHome',isAthlete);
+ show('navProfile',isAthlete);
+ show('navMeasurements',isAthlete);
+ show('goMeasurements',isAthlete);
+ show('goTraining',isAthlete);
+ show('athleteProfile',isAthlete&&(!athleteReady||view==='profile')&&enabled);
+ show('athleteHome',isAthlete&&accessible&&view==='home');
+ if(isAthlete){
+  safeText($('profileHeading'),athleteReady?'Mi perfil':'Completa tu perfil');
+  safeText($('profileInstructions'),athleteReady?'Puedes actualizar tus datos cuando lo necesites. Solo el nombre es obligatorio.':'Solo tu nombre es obligatorio para empezar. Podrás añadir otros datos más adelante.');
+ }
+ const measureEnabled=gymModules.find(m=>m.gym_id===activeGym?.id&&m.module_key==='measurements')?.enabled===true;
+ const trainEnabled=gymModules.find(m=>m.gym_id===activeGym?.id&&m.module_key==='training')?.enabled===true;
+ $('navMeasurements').hidden=!isAthlete||!measureEnabled;
+ $('goMeasurements').hidden=!isAthlete||!measureEnabled;
+ $('navTraining').hidden=!trainEnabled;
+ $('goTraining').hidden=!isAthlete||!trainEnabled;
+ if((view==='measurements'&&!measureEnabled)||(view==='plans'&&!trainEnabled))view='home';
+ show('measurements',isAthlete&&accessible&&view==='measurements');
+ show('plans',accessible&&view==='plans');
+ show('overview',false);
+ $('addMeasure').hidden=!isAthlete||!accessible;
+ for(const [id,target] of [['navHome','home'],['navTraining','plans'],['navMeasurements','measurements'],['navProfile','profile']]){
+  const button=$(id);button.className=view===target?'':'outline';button.setAttribute('aria-current',view===target?'page':'false');
+ }
+ if(!accessible)return;
+ if(view==='measurements')loadMeasurements().catch(e=>notice(errorMessage(e)));
+ if(view==='plans')loadPlans().catch(e=>notice(errorMessage(e)));
+}
 async function loadAthleteProfile(){
- const {data,error}=await db.from('fitos_profiles').select('display_name,birth_date,height_cm').eq('id',auth.id).maybeSingle();
+ const fetch=++profileFetchId;
+ const {data,error}=await db.from('fitos_profiles').select('display_name,birth_date,height_cm,sex').eq('id',auth.id).maybeSingle();
  if(error)throw error;
+ if(fetch!==profileFetchId)return;
  $('profileName').value=data?.display_name||'';
  $('profileBirth').value=data?.birth_date||'';
  $('profileHeight').value=data?.height_cm??'';
+ $('profileSex').value=data?.sex||'';
  $('profileBirth').max=localDate();
- if(!data?.display_name) $('profileSaveStatus').textContent='Completa tu nombre para activar tu perfil.';
- else $('profileSaveStatus').textContent='Perfil guardado.';
+ athleteReady=Boolean(data?.display_name?.trim());
+ if(!athleteReady)view='profile';
+ safeText($('profileSaveStatus'),athleteReady?'Perfil guardado.':'Escribe tu nombre para activar tu perfil.');
+ safeText($('athleteWelcome'),athleteReady?'Bienvenido, '+data.display_name:'Tu espacio de entrenamiento');
+ renderAthleteView();
 }
 async function saveAthleteProfile(e){
- e.preventDefault();const gymRole=memberships.find(m=>m.gym_id===activeGym?.id)?.role;
- if(gymRole!=='athlete'||!activeGym||!['trial','active'].includes(activeGym.status))return notice('El perfil solo puede guardarse desde una cuenta de deportista activa.');
+ e.preventDefault();
+ const gymRole=memberships.find(m=>m.gym_id===activeGym?.id)?.role;
+ if(gymRole!=='athlete'||!activeGym||!['trial','active'].includes(activeGym.status))return notice('Solo un deportista autorizado puede guardar su perfil.');
  const form=$('saveAthleteProfile'),save=form.querySelector('button[type=submit]');
- const name=$('profileName').value.trim(),born=$('profileBirth').value||null,stature=$('profileHeight').value?Number($('profileHeight').value):null;
- if(name.length<2||name.length>120||(born&&born>localDate())||(stature!==null&&(!Number.isFinite(stature)||stature<80||stature>250)))return notice('Revisa los datos del perfil.');
+ const name=$('profileName').value.trim(),born=$('profileBirth').value||null,stature=$('profileHeight').value?Number($('profileHeight').value):null,sex=$('profileSex').value||null;
+ if(name.length<2||name.length>120||(born&&born>localDate())||(stature!==null&&(!Number.isFinite(stature)||stature<80||stature>250))||!([null,'M','F','No binario'].includes(sex)))return notice('Revisa los datos del perfil.');
  save.disabled=true;
- try{const {error}=await db.rpc('fitos_save_my_athlete_profile',{full_name:name,born,stature_cm:stature});if(error)throw error;
- $('profileSaveStatus').textContent='Perfil guardado correctamente.';notice('Perfil actualizado.');
+ try{
+  const {error}=await db.rpc('fitos_save_my_athlete_profile',{full_name:name,born,stature_cm:stature,sex_value:sex});
+  if(error)throw error;
+  athleteReady=true;view='home';
+  safeText($('athleteWelcome'),'Bienvenido, '+name);
+  safeText($('profileSaveStatus'),'Perfil guardado correctamente.');
+  notice('Perfil guardado. Ya puedes utilizar FitOS.');
+  renderAthleteView();
  }catch(err){notice(errorMessage(err))}finally{save.disabled=false}
 }
-
 async function addMeasurement(e){
  e.preventDefault();if(!activeGym||!['active','trial'].includes(activeGym.status))return;
  if(isMaster||memberships.find(m=>m.gym_id===activeGym.id)?.role!=='athlete')return notice('Solo el deportista puede registrar sus propias mediciones.');
